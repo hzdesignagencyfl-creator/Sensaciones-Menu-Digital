@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { STR } from "@/lib/data/menu-meta";
 import { dishDesc, dishIngredients, dishName, formatPrice } from "@/lib/format";
 import type { Dish, Lang } from "@/lib/types";
-import { Badges, Stars } from "./Badges";
+import { Badges } from "./Badges";
 import { DishPhoto } from "./DishPhoto";
 
 export function DishCard({
@@ -29,7 +29,7 @@ export function DishCard({
   const ingredients = dishIngredients(dish, lang);
   const hasVideo = Boolean(dish.video_url);
   const unavailable = !dish.available_today;
-  const showDescBtn = desc.length > 62;
+  const showDescBtn = desc.length > 0;
 
   function onTouchStart(e: React.TouchEvent) {
     touchX.current = e.touches[0]?.clientX ?? 0;
@@ -52,7 +52,7 @@ export function DishCard({
     >
       {/* ── Photo / video swipe area ── */}
       <div
-        style={{ position: "relative", overflow: "hidden", height: "186px" }}
+        style={{ position: "relative", overflow: "hidden", height: "236px" }}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
@@ -68,14 +68,14 @@ export function DishCard({
           <div
             style={{
               flex: "0 0 50%",
-              height: "186px",
+              height: "236px",
               position: "relative",
               overflow: "hidden",
               cursor: "pointer",
             }}
             onClick={() => onOpenMedia(dish, 0)}
           >
-            <DishPhoto src={dish.photo_url} alt={name} height={186} grayscale={unavailable} />
+            <DishPhoto src={dish.photo_url} alt={name} height={236} grayscale={unavailable} />
 
             <div
               style={{
@@ -169,7 +169,7 @@ export function DishCard({
           <div
             style={{
               flex: "0 0 50%",
-              height: "186px",
+              height: "236px",
               background: "#0a0a0a",
               position: "relative",
               overflow: "hidden",
@@ -248,11 +248,6 @@ export function DishCard({
       <div style={{ padding: "14px 16px 16px" }}>
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: "12px" }}>
           <div style={{ minWidth: 0 }}>
-            {dish.star_rating > 0 && (
-              <div style={{ marginBottom: "4px" }}>
-                <Stars count={dish.star_rating} />
-              </div>
-            )}
             <h3
               onClick={() => onOpen(dish)}
               className="font-display"
@@ -281,24 +276,6 @@ export function DishCard({
           </div>
         </div>
 
-        <p
-          style={{
-            margin: "8px 0 0",
-            fontSize: "13.5px",
-            lineHeight: 1.55,
-            color: "var(--body-text)",
-            ...(descOpen
-              ? {}
-              : {
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical",
-                  overflow: "hidden",
-                }),
-          }}
-        >
-          {desc}
-        </p>
         {showDescBtn && (
           <button
             onClick={() => setDescOpen((v) => !v)}
@@ -306,7 +283,7 @@ export function DishCard({
               background: "none",
               border: "none",
               padding: 0,
-              marginTop: "5px",
+              marginTop: "8px",
               color: "var(--gold-dark)",
               fontSize: "12px",
               fontWeight: 600,
@@ -315,6 +292,18 @@ export function DishCard({
           >
             {descOpen ? t.showLess : t.seeMore}
           </button>
+        )}
+        {descOpen && (
+          <p
+            style={{
+              margin: "6px 0 0",
+              fontSize: "13.5px",
+              lineHeight: 1.55,
+              color: "var(--body-text)",
+            }}
+          >
+            {desc}
+          </p>
         )}
 
         <button
