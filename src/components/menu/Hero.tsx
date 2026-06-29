@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { HERO_IMAGES, STR } from "@/lib/data/menu-meta";
+import { HERO_IMAGES } from "@/lib/data/menu-meta";
 import type { Lang } from "@/lib/types";
 
 export function Hero({
@@ -12,7 +12,6 @@ export function Hero({
   onLang: (l: Lang) => void;
 }) {
   const [idx, setIdx] = useState(0);
-  const t = STR[lang];
 
   useEffect(() => {
     const timer = setInterval(
@@ -45,7 +44,10 @@ export function Hero({
       style={{
         position: "relative",
         background: "#111",
-        padding: "30px 20px 26px",
+        padding: "20px 20px",
+        minHeight: "190px",
+        display: "flex",
+        flexDirection: "column",
         overflow: "hidden",
       }}
     >
@@ -77,28 +79,16 @@ export function Hero({
         }}
       />
 
-      <div style={{ position: "relative", zIndex: 1 }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-          }}
-        >
-          <svg
-            width="34"
-            height="34"
-            viewBox="0 0 64 64"
-            fill="none"
-            stroke="#C4A35A"
-            strokeWidth="2.2"
-            strokeLinejoin="round"
-            strokeLinecap="round"
-          >
-            <path d="M20 41 C12 41 8 35 10 29 C6 25 8 16 16 16 C17 9 25 6 31 11 C35 6 45 7 47 14 C56 13 60 21 54 28 C57 34 51 41 43 41 Z" />
-            <path d="M20 41 H44 V49 C44 51 42 53 40 53 H24 C22 53 20 51 20 49 Z" />
-            <path d="M27 41 V49 M32 41 V49 M37 41 V49" strokeWidth="1.4" />
-          </svg>
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "flex-end" }}>
           <div
             style={{
               display: "flex",
@@ -117,65 +107,13 @@ export function Hero({
           </div>
         </div>
 
-        <div style={{ textAlign: "center", marginTop: "4px" }}>
-          <div
-            className="font-display"
-            style={{
-              fontSize: "28px",
-              fontWeight: 600,
-              letterSpacing: "0.18em",
-              color: "var(--gold-primary)",
-              lineHeight: 1,
-              textIndent: "0.18em",
-            }}
-          >
-            SENSACIONES
-          </div>
-          <div
-            style={{
-              fontSize: "10px",
-              fontWeight: 500,
-              letterSpacing: "0.24em",
-              textTransform: "uppercase",
-              color: "rgba(250,247,242,0.7)",
-              marginTop: "8px",
-            }}
-          >
-            {t.tagline}
-          </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "9px",
-              marginTop: "13px",
-            }}
-          >
-            <span
-              style={{
-                height: "1px",
-                width: "42px",
-                background: "linear-gradient(90deg,rgba(196,163,90,0),#C4A35A)",
-              }}
-            />
-            <svg width="11" height="15" viewBox="0 0 11 16" fill="none" stroke="#C4A35A" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M2 1.5v3.4M5.5 1.5v3.4M9 1.5v3.4M2 4.9c0 1.9 1.4 2.4 3.5 2.4s3.5-.5 3.5-2.4" />
-              <path d="M5.5 7.3v7.2" />
-            </svg>
-            <span style={{ color: "#C4A35A", fontSize: "7px" }}>◆</span>
-            <svg width="9" height="15" viewBox="0 0 9 16" fill="none" stroke="#C4A35A" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 1.5C7.6 3.2 7.6 6.6 6 8.6" />
-              <path d="M6 1.5v13" />
-            </svg>
-            <span
-              style={{
-                height: "1px",
-                width: "42px",
-                background: "linear-gradient(90deg,#C4A35A,rgba(196,163,90,0))",
-              }}
-            />
-          </div>
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/logo/logo-on-dark.png"
+            alt="Sensaciones"
+            style={{ height: "88px", width: "auto", display: "block" }}
+          />
         </div>
       </div>
     </header>

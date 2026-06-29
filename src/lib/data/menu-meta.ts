@@ -76,5 +76,5 @@ export const DEFAULT_SETTINGS: Settings = {
   whatsapp: "",
   phone: "",
   restaurant_name: "Sensaciones",
-  google_review_url: "https://search.google.com/local/writereview?placeid=ChIJSensaciones",
+  google_review_url: "https://g.page/r/CQgqyekLOSgtEBM/review",
 };

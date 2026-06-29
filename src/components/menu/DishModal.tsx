@@ -11,10 +11,12 @@ export function DishModal({
   dish,
   lang,
   onClose,
+  onOpenMedia,
 }: {
   dish: Dish | null;
   lang: Lang;
   onClose: () => void;
+  onOpenMedia: (dish: Dish, index: number) => void;
 }) {
   // Close on Escape + lock body scroll while open.
   useEffect(() => {
@@ -57,9 +59,14 @@ export function DishModal({
         }}
       >
         <div style={{ position: "relative" }}>
-          <DishPhoto src={dish.photo_url} alt={name} height={238} grayscale={unavailable} />
+          <div style={{ cursor: "pointer" }} onClick={() => onOpenMedia(dish, 0)}>
+            <DishPhoto src={dish.photo_url} alt={name} height={238} grayscale={unavailable} />
+          </div>
           <button
-            onClick={onClose}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
             aria-label="Close"
             style={{
               position: "absolute",

@@ -2,14 +2,24 @@ import { STR } from "@/lib/data/menu-meta";
 import { formatPrice } from "@/lib/format";
 import type { Lang, Special } from "@/lib/types";
 
-export function SpecialBanner({ special, lang }: { special: Special; lang: Lang }) {
+export function SpecialBanner({
+  special,
+  lang,
+  onOpen,
+}: {
+  special: Special;
+  lang: Lang;
+  onOpen: () => void;
+}) {
   if (!special.active) return null;
   const t = STR[lang];
   const name = lang === "en" ? special.name_en : special.name_es;
   const desc = lang === "en" ? special.description_en : special.description_es;
+  const clickable = Boolean(special.photo_url);
 
   return (
     <div
+      onClick={clickable ? onOpen : undefined}
       style={{
         margin: "16px",
         borderRadius: "18px",
@@ -17,6 +27,7 @@ export function SpecialBanner({ special, lang }: { special: Special; lang: Lang 
         position: "relative",
         height: "162px",
         boxShadow: "0 12px 30px rgba(30,30,30,0.38)",
+        cursor: clickable ? "pointer" : "default",
       }}
     >
       {special.photo_url && (

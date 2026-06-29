@@ -104,7 +104,7 @@ export function SpecialSection({
               <Segmented value={lang} onChange={setLang} options={[{ value: "en", label: "EN" }, { value: "es", label: "ES" }]} />
             </div>
             <div style={{ width: "100%", maxWidth: "358px", margin: "0 auto" }}>
-              <SpecialBanner special={{ ...form, active: true }} lang={lang} />
+              <SpecialBanner special={{ ...form, active: true }} lang={lang} onOpen={() => {}} />
             </div>
           </div>
 

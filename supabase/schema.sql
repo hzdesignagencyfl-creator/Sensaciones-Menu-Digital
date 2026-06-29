@@ -136,5 +136,5 @@ insert into public.settings (key, value) values
   ('restaurant_name',   '"Sensaciones"'::jsonb),
   ('whatsapp',          '""'::jsonb),
   ('phone',             '""'::jsonb),
-  ('google_review_url', '"https://search.google.com/local/writereview?placeid=ChIJSensaciones"'::jsonb)
+  ('google_review_url', '"https://g.page/r/CQgqyekLOSgtEBM/review"'::jsonb)
 on conflict (key) do nothing;

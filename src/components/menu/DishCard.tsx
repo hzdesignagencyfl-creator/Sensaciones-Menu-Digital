@@ -11,10 +11,12 @@ export function DishCard({
   dish,
   lang,
   onOpen,
+  onOpenMedia,
 }: {
   dish: Dish;
   lang: Lang;
   onOpen: (dish: Dish) => void;
+  onOpenMedia: (dish: Dish, index: number) => void;
 }) {
   const t = STR[lang];
   const [descOpen, setDescOpen] = useState(false);
@@ -69,7 +71,9 @@ export function DishCard({
               height: "186px",
               position: "relative",
               overflow: "hidden",
+              cursor: "pointer",
             }}
+            onClick={() => onOpenMedia(dish, 0)}
           >
             <DishPhoto src={dish.photo_url} alt={name} height={186} grayscale={unavailable} />
 
@@ -90,7 +94,10 @@ export function DishCard({
             <div style={{ position: "absolute", top: "10px", right: "10px", display: "flex", gap: "7px" }}>
               {hasVideo && (
                 <button
-                  onClick={() => setVideoOpen(true)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setVideoOpen(true);
+                  }}
                   aria-label="Play video"
                   style={{
                     width: "34px",
@@ -111,7 +118,10 @@ export function DishCard({
                 </button>
               )}
               <button
-                onClick={() => onOpen(dish)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpen(dish);
+                }}
                 aria-label="Expand"
                 style={{
                   width: "34px",
@@ -166,7 +176,9 @@ export function DishCard({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              cursor: dish.video_url ? "pointer" : "default",
             }}
+            onClick={() => dish.video_url && onOpenMedia(dish, 1)}
           >
             {dish.video_url ? (
               <video
@@ -201,7 +213,10 @@ export function DishCard({
               </div>
             )}
             <button
-              onClick={() => setVideoOpen(false)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setVideoOpen(false);
+              }}
               style={{
                 position: "absolute",
                 top: "10px",
@@ -243,8 +258,8 @@ export function DishCard({
               className="font-display"
               style={{
                 margin: 0,
-                fontWeight: 600,
-                fontSize: "19px",
+                fontWeight: 700,
+                fontSize: "23px",
                 color: "var(--charcoal)",
                 lineHeight: 1.12,
                 cursor: "pointer",

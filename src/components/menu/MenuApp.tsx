@@ -16,7 +16,9 @@ import { CategoryNav } from "./CategoryNav";
 import { SpecialBanner } from "./SpecialBanner";
 import { DishCard } from "./DishCard";
 import { DishModal } from "./DishModal";
+import { MediaLightbox } from "./MediaLightbox";
 import { ReviewCTA } from "./ReviewCTA";
+import { ScrollTopButton } from "./ScrollTopButton";
 
 export function MenuApp({ initial }: { initial: MenuData }) {
   const [lang, setLang] = useState<Lang>(initial.settings.default_lang);
@@ -24,7 +26,9 @@ export function MenuApp({ initial }: { initial: MenuData }) {
   const [dishes, setDishes] = useState<Dish[]>(initial.dishes);
   const [special, setSpecial] = useState<Special>(initial.special);
   const [modalDish, setModalDish] = useState<Dish | null>(null);
+  const [lightbox, setLightbox] = useState<{ source: Dish | Special; index: number } | null>(null);
   const didOpen = useRef(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const t = STR[lang];
 
@@ -85,6 +89,16 @@ export function MenuApp({ initial }: { initial: MenuData }) {
     trackDishTap(d.id, d.category);
   }
 
+  function openMedia(d: Dish, index: number) {
+    setLightbox({ source: d, index });
+    trackDishTap(d.id, d.category);
+  }
+
+  function openSpecialMedia(s: Special) {
+    setLightbox({ source: s, index: 0 });
+    trackDishTap(`special-${s.id}`, "special");
+  }
+
   const visible = useMemo(
     () => dishes.filter((d) => d.status === "visible"),
     [dishes],
@@ -104,13 +118,14 @@ export function MenuApp({ initial }: { initial: MenuData }) {
   return (
     <div className="menu-shell">
       <div
+        ref={scrollRef}
         className="hide-scroll menu-scroll"
         style={{ position: "relative" }}
       >
         <Hero lang={lang} onLang={changeLang} />
         <CategoryNav active={cat} lang={lang} onSelect={changeCat} />
 
-        <SpecialBanner special={special} lang={lang} />
+        <SpecialBanner special={special} lang={lang} onOpen={() => openSpecialMedia(special)} />
 
         {/* Section heading */}
         <div style={{ display: "flex", alignItems: "center", gap: "14px", padding: "10px 20px 2px" }}>
@@ -128,7 +143,7 @@ export function MenuApp({ initial }: { initial: MenuData }) {
 
         <div style={{ padding: "10px 16px 16px", display: "flex", flexDirection: "column", gap: "16px" }}>
           {list.map((dish) => (
-            <DishCard key={dish.id} dish={dish} lang={lang} onOpen={openDish} />
+            <DishCard key={dish.id} dish={dish} lang={lang} onOpen={openDish} onOpenMedia={openMedia} />
           ))}
           {list.length === 0 && (
             <div style={{ textAlign: "center", color: "var(--muted-text)", padding: "40px 0", fontSize: "14px" }}>
@@ -140,8 +155,17 @@ export function MenuApp({ initial }: { initial: MenuData }) {
         <div style={{ height: "44px" }} />
       </div>
 
+      <ScrollTopButton onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })} />
       <ReviewCTA lang={lang} href={initial.settings.google_review_url} />
-      <DishModal dish={modalDish} lang={lang} onClose={() => setModalDish(null)} />
+      <DishModal dish={modalDish} lang={lang} onClose={() => setModalDish(null)} onOpenMedia={openMedia} />
+      {lightbox && (
+        <MediaLightbox
+          key={lightbox.source.id}
+          source={lightbox.source}
+          initialIndex={lightbox.index}
+          onClose={() => setLightbox(null)}
+        />
+      )}
     </div>
   );
 }
