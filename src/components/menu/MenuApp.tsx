@@ -8,37 +8,55 @@ import {
   trackLangSet,
   trackMenuOpen,
 } from "@/lib/analytics";
-import { STR, categoryLabel } from "@/lib/data/menu-meta";
 import type { MenuData } from "@/lib/data-service";
 import type { CategoryId, Dish, Lang, Special } from "@/lib/types";
-import { Hero } from "./Hero";
-import { CategoryNav } from "./CategoryNav";
-import { SpecialBanner } from "./SpecialBanner";
-import { DishCard } from "./DishCard";
-import { DishModal } from "./DishModal";
+import { BottomNav, type NavTab } from "./BottomNav";
+import { CategoriesView } from "./CategoriesView";
+import { CategoryView } from "./CategoryView";
+import { Cover } from "./Cover";
+import { DishDetail } from "./DishDetail";
+import { Home } from "./Home";
 import { MediaLightbox } from "./MediaLightbox";
-import { ReviewCTA } from "./ReviewCTA";
-import { ScrollTopButton } from "./ScrollTopButton";
 
 const LANG_KEY = "sensaciones_lang";
+const COVER_KEY = "sensaciones_cover_seen";
+
+/** Client-side view machine; screens are synced with browser history so the
+ *  phone's back gesture walks detail → category → home instead of leaving. */
+type View =
+  | { screen: "home" }
+  | { screen: "categories" }
+  | { screen: "category"; cat: CategoryId }
+  | { screen: "detail"; dishId: string };
 
 export function MenuApp({ initial }: { initial: MenuData }) {
   const [lang, setLang] = useState<Lang>(initial.settings.default_lang);
-  const [cat, setCat] = useState<CategoryId>("popular");
+  const [view, setView] = useState<View>({ screen: "home" });
+  // Cover renders as an overlay above Home (SSR keeps serving menu content).
+  const [coverOpen, setCoverOpen] = useState(true);
   const [dishes, setDishes] = useState<Dish[]>(initial.dishes);
   const [special, setSpecial] = useState<Special>(initial.special);
-  const [modalDish, setModalDish] = useState<Dish | null>(null);
   const [lightbox, setLightbox] = useState<{ source: Dish | Special; index: number } | null>(null);
   const didOpen = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  const t = STR[lang];
 
   // menu_open once per session
   useEffect(() => {
     if (didOpen.current) return;
     didOpen.current = true;
     trackMenuOpen();
+  }, []);
+
+  // Cover: once per session.
+  useEffect(() => {
+    try {
+      if (window.sessionStorage.getItem(COVER_KEY)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setCoverOpen(false);
+      }
+    } catch {
+      // storage blocked — keep showing the cover this load
+    }
   }, []);
 
   // Restore the visitor's last language choice. Can't happen in the useState
@@ -55,6 +73,22 @@ export function MenuApp({ initial }: { initial: MenuData }) {
       // storage blocked (private mode) — keep the default language
     }
   }, []);
+
+  // History integration: seed the initial entry, then mirror popstate → view.
+  useEffect(() => {
+    window.history.replaceState({ menuView: { screen: "home" } }, "");
+    const onPop = (e: PopStateEvent) => {
+      const v = (e.state?.menuView as View | undefined) ?? { screen: "home" };
+      setView(v);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  // Each screen change starts at the top.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [view]);
 
   // Realtime: reflect admin availability / special edits instantly.
   useEffect(() => {
@@ -109,22 +143,40 @@ export function MenuApp({ initial }: { initial: MenuData }) {
     trackLangSet(l);
   }
 
-  function changeCat(c: CategoryId) {
-    setCat(c);
-    trackCatView(c);
+  function navigate(v: View) {
+    setView(v);
+    window.history.pushState({ menuView: v }, "");
+  }
+
+  function goBack() {
+    window.history.back();
+  }
+
+  function enterMenu() {
+    setCoverOpen(false);
+    try {
+      window.sessionStorage.setItem(COVER_KEY, "1");
+    } catch {
+      // storage blocked — cover will show again next load
+    }
+  }
+
+  function openCategory(cat: CategoryId) {
+    navigate({ screen: "category", cat });
+    trackCatView(cat);
   }
 
   function openDish(d: Dish) {
-    setModalDish(d);
+    navigate({ screen: "detail", dishId: d.id });
     trackDishTap(d.id, d.category);
   }
 
   function openMedia(d: Dish, index: number) {
     setLightbox({ source: d, index });
-    trackDishTap(d.id, d.category);
   }
 
   function openSpecialMedia(s: Special) {
+    if (!s.photo_url) return;
     setLightbox({ source: s, index: 0 });
     trackDishTap(`special-${s.id}`, "special");
   }
@@ -134,66 +186,65 @@ export function MenuApp({ initial }: { initial: MenuData }) {
     [dishes],
   );
 
-  const list = useMemo(() => {
-    const filtered =
-      cat === "popular"
-        ? visible.filter((d) => d.badge_popular)
-        : visible.filter((d) => d.category === cat);
-    return [...filtered].sort((a, b) => a.sort_order - b.sort_order);
-  }, [visible, cat]);
+  // Detail dish is derived from live state so realtime edits show instantly.
+  const detailDish =
+    view.screen === "detail" ? visible.find((d) => d.id === view.dishId) : undefined;
 
-  const activeLabel = categoryLabel(cat, lang);
-  const countLabel = `${list.length} ${list.length === 1 ? t.item : t.items}`;
+  const navTab: NavTab = view.screen === "categories" ? "categories" : "home";
+  const showNav = view.screen !== "detail" || !detailDish;
 
   return (
     <div className="menu-shell">
-      <div
-        ref={scrollRef}
-        className="hide-scroll menu-scroll"
-        style={{ position: "relative" }}
-      >
-        <Hero lang={lang} onLang={changeLang} />
-        <CategoryNav active={cat} lang={lang} onSelect={changeCat} />
-
-        <SpecialBanner special={special} lang={lang} onOpen={() => openSpecialMedia(special)} />
-
-        {/* Section heading */}
-        <div style={{ display: "flex", alignItems: "center", gap: "14px", padding: "10px 20px 2px" }}>
-          <h2
-            className="font-display"
-            style={{ fontWeight: 600, fontSize: "22px", color: "var(--charcoal)", margin: 0, whiteSpace: "nowrap" }}
-          >
-            {activeLabel}
-          </h2>
-          <span style={{ flex: 1, height: "1px", background: "var(--border)" }} />
-          <span style={{ fontSize: "11px", color: "var(--body-text)", letterSpacing: "0.06em" }}>
-            {countLabel}
-          </span>
-        </div>
-
-        <div style={{ padding: "10px 16px 16px", display: "flex", flexDirection: "column", gap: "16px" }}>
-          {list.map((dish) => (
-            <DishCard key={dish.id} dish={dish} lang={lang} onOpen={openDish} onOpenMedia={openMedia} />
+      <div ref={scrollRef} className="hide-scroll menu-scroll" style={{ position: "relative" }}>
+        {view.screen === "home" && (
+          <Home
+            dishes={visible}
+            special={special}
+            lang={lang}
+            onLang={changeLang}
+            onOpenCategory={openCategory}
+            onOpenDish={openDish}
+            onOpenSpecial={() => openSpecialMedia(special)}
+          />
+        )}
+        {view.screen === "categories" && (
+          <CategoriesView dishes={visible} lang={lang} onBack={goBack} onOpenCategory={openCategory} />
+        )}
+        {view.screen === "category" && (
+          <CategoryView cat={view.cat} dishes={visible} lang={lang} onBack={goBack} onOpenDish={openDish} />
+        )}
+        {view.screen === "detail" &&
+          (detailDish ? (
+            <DishDetail dish={detailDish} lang={lang} onBack={goBack} onOpenMedia={openMedia} />
+          ) : (
+            // Dish was hidden/deleted while open — fall back to Home content.
+            <Home
+              dishes={visible}
+              special={special}
+              lang={lang}
+              onLang={changeLang}
+              onOpenCategory={openCategory}
+              onOpenDish={openDish}
+              onOpenSpecial={() => openSpecialMedia(special)}
+            />
           ))}
-          {list.length === 0 && (
-            <div style={{ textAlign: "center", color: "var(--muted-text)", padding: "40px 0", fontSize: "14px" }}>
-              {lang === "en" ? "No dishes in this section yet." : "Aún no hay platos en esta sección."}
-            </div>
-          )}
-        </div>
-
-        <div style={{ height: "44px" }} />
       </div>
 
-      <ScrollTopButton onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })} />
-      <ReviewCTA lang={lang} href={initial.settings.google_review_url} />
-      <DishModal
-        dish={modalDish}
-        lang={lang}
-        suspended={Boolean(lightbox)}
-        onClose={() => setModalDish(null)}
-        onOpenMedia={openMedia}
-      />
+      {showNav && (
+        <BottomNav
+          active={navTab}
+          lang={lang}
+          reviewUrl={initial.settings.google_review_url}
+          onSelect={(tab) => {
+            if (tab === "home") {
+              if (view.screen !== "home") navigate({ screen: "home" });
+            } else if (view.screen !== "categories") {
+              navigate({ screen: "categories" });
+            }
+          }}
+        />
+      )}
+
       {lightbox && (
         <MediaLightbox
           key={lightbox.source.id}
@@ -202,6 +253,8 @@ export function MenuApp({ initial }: { initial: MenuData }) {
           onClose={() => setLightbox(null)}
         />
       )}
+
+      {coverOpen && <Cover lang={lang} onLang={changeLang} onEnter={enterMenu} />}
     </div>
   );
 }

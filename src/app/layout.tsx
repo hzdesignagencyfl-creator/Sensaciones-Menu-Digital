@@ -1,15 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, DM_Sans } from "next/font/google";
+import { Montserrat, Roboto_Condensed } from "next/font/google";
 import "./globals.css";
 
-const cormorant = Cormorant_Garamond({
+const robotoCondensed = Roboto_Condensed({
   variable: "--font-display",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
-const dmSans = DM_Sans({
+const montserrat = Montserrat({
   variable: "--font-body",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -33,7 +33,7 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${cormorant.variable} ${dmSans.variable}`}>
+    <html lang="en" className={`${robotoCondensed.variable} ${montserrat.variable}`}>
       <body>{children}</body>
     </html>
   );

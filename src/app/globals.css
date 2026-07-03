@@ -23,8 +23,8 @@
   --error: #c0524a;
   --error-bg: #fbf1f0;
 
-  --font-display-stack: var(--font-display), "Cormorant Garamond", Georgia, serif;
-  --font-body-stack: var(--font-body), "DM Sans", system-ui, sans-serif;
+  --font-display-stack: var(--font-display), "Roboto Condensed", "Arial Narrow", sans-serif;
+  --font-body-stack: var(--font-body), "Montserrat", system-ui, sans-serif;
 }
 
 * {
