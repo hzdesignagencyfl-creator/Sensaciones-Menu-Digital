@@ -9,6 +9,18 @@ import { SpecialBanner } from "./SpecialBanner";
 
 const CATEGORY_CHIPS = CATEGORIES.filter((c) => c.id !== "popular");
 
+/** Categories that get their own dish section on the Home. */
+const HOME_SECTIONS: CategoryId[] = [
+  "breakfast",
+  "appetizers",
+  "sandwiches",
+  "entrees",
+  "desserts",
+  "drinks",
+];
+/** Dishes shown per Home section before "View all". */
+const SECTION_LIMIT = 4;
+
 /** Home screen: brand header, search, category chips, special, featured grids. */
 export function Home({
   dishes,
@@ -198,6 +210,24 @@ export function Home({
               <DishGrid dishes={fresh} lang={lang} onOpen={onOpenDish} />
             </Section>
           )}
+
+          {/* Per-category sections */}
+          {HOME_SECTIONS.map((cat) => {
+            const list = [...dishes.filter((d) => d.category === cat)]
+              .sort((a, b) => a.sort_order - b.sort_order)
+              .slice(0, SECTION_LIMIT);
+            if (list.length === 0) return null;
+            return (
+              <Section
+                key={cat}
+                title={categoryLabel(cat, lang)}
+                viewAllLabel={t.viewAll}
+                onViewAll={() => onOpenCategory(cat)}
+              >
+                <DishGrid dishes={list} lang={lang} onOpen={onOpenDish} />
+              </Section>
+            );
+          })}
 
           <div style={{ height: "92px" }} />
         </>

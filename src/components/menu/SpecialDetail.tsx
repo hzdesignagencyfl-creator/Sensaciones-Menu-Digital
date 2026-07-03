@@ -72,7 +72,15 @@ export function SpecialDetail({
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "14px", marginTop: "20px" }}>
           <h2
             className="font-display"
-            style={{ margin: 0, fontSize: "27px", fontWeight: 700, color: "var(--charcoal)", lineHeight: 1.1 }}
+            style={{
+              margin: 0,
+              fontSize: "26px",
+              fontWeight: 700,
+              color: "var(--charcoal)",
+              lineHeight: 1.12,
+              letterSpacing: "0.02em",
+              textTransform: "uppercase",
+            }}
           >
             {name}
           </h2>

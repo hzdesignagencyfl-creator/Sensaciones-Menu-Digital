@@ -70,10 +70,12 @@ export function GridCard({
         className="font-display"
         style={{
           marginTop: "9px",
-          fontSize: "17px",
+          fontSize: "16px",
           fontWeight: 700,
           color: "var(--charcoal)",
-          lineHeight: 1.15,
+          lineHeight: 1.18,
+          letterSpacing: "0.02em",
+          textTransform: "uppercase",
           display: "-webkit-box",
           WebkitLineClamp: 2,
           WebkitBoxOrient: "vertical",

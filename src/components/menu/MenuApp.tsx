@@ -22,14 +22,46 @@ import { SpecialDetail } from "./SpecialDetail";
 const LANG_KEY = "sensaciones_lang";
 const COVER_KEY = "sensaciones_cover_seen";
 
-/** Client-side view machine; screens are synced with browser history so the
- *  phone's back gesture walks detail → category → home instead of leaving. */
+/** Client-side view machine. The view is encoded in the URL hash (#cat=…,
+ *  #dish=…) rather than in history state: Next's App Router owns and rewrites
+ *  history state objects, but it leaves the hash alone — so the phone's back
+ *  gesture walks detail → category → home reliably, and dish links are
+ *  shareable. */
 type View =
   | { screen: "home" }
   | { screen: "categories" }
   | { screen: "category"; cat: CategoryId }
   | { screen: "detail"; dishId: string }
   | { screen: "special" };
+
+const CATEGORY_IDS: CategoryId[] = [
+  "popular", "breakfast", "appetizers", "soups", "sandwiches", "pastas",
+  "entrees", "lunch", "kids", "sides", "desserts", "drinks",
+];
+
+function viewToHash(v: View): string {
+  switch (v.screen) {
+    case "categories": return "#categories";
+    case "category": return `#cat=${v.cat}`;
+    case "detail": return `#dish=${encodeURIComponent(v.dishId)}`;
+    case "special": return "#special";
+    default: return "#home";
+  }
+}
+
+function hashToView(hash: string): View {
+  const h = hash.replace(/^#/, "");
+  if (h === "categories") return { screen: "categories" };
+  if (h === "special") return { screen: "special" };
+  if (h.startsWith("cat=")) {
+    const cat = h.slice(4) as CategoryId;
+    if (CATEGORY_IDS.includes(cat)) return { screen: "category", cat };
+  }
+  if (h.startsWith("dish=")) {
+    return { screen: "detail", dishId: decodeURIComponent(h.slice(5)) };
+  }
+  return { screen: "home" };
+}
 
 export function MenuApp({ initial }: { initial: MenuData }) {
   const [lang, setLang] = useState<Lang>(initial.settings.default_lang);
@@ -41,6 +73,8 @@ export function MenuApp({ initial }: { initial: MenuData }) {
   const [lightbox, setLightbox] = useState<{ source: Dish | Special; index: number } | null>(null);
   const didOpen = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // How many in-app navigations we have pushed; guards goBack on deep links.
+  const depthRef = useRef(0);
 
   // menu_open once per session
   useEffect(() => {
@@ -76,15 +110,15 @@ export function MenuApp({ initial }: { initial: MenuData }) {
     }
   }, []);
 
-  // History integration: seed the initial entry, then mirror popstate → view.
+  // URL-hash routing: the hash is the single source of truth for the view.
+  // Covers our own navigations, back/forward gestures, and shared #dish links.
   useEffect(() => {
-    window.history.replaceState({ menuView: { screen: "home" } }, "");
-    const onPop = (e: PopStateEvent) => {
-      const v = (e.state?.menuView as View | undefined) ?? { screen: "home" };
-      setView(v);
+    const sync = () => {
+      setView(hashToView(window.location.hash));
     };
-    window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
+    sync(); // honor a deep link on first load
+    window.addEventListener("hashchange", sync);
+    return () => window.removeEventListener("hashchange", sync);
   }, []);
 
   // Each screen change starts at the top.
@@ -146,12 +180,22 @@ export function MenuApp({ initial }: { initial: MenuData }) {
   }
 
   function navigate(v: View) {
-    setView(v);
-    window.history.pushState({ menuView: v }, "");
+    const hash = viewToHash(v);
+    if (window.location.hash === hash) return;
+    depthRef.current += 1;
+    // Assigning the hash pushes a history entry; the hashchange listener
+    // updates the view, keeping URL and UI in lockstep.
+    window.location.hash = hash;
   }
 
   function goBack() {
-    window.history.back();
+    if (depthRef.current > 0) {
+      depthRef.current -= 1;
+      window.history.back();
+    } else {
+      // Landed directly on a deep link — back should go home, not leave the site.
+      navigate({ screen: "home" });
+    }
   }
 
   function enterMenu() {
@@ -239,7 +283,15 @@ export function MenuApp({ initial }: { initial: MenuData }) {
         )}
         {view.screen === "detail" &&
           (detailDish ? (
-            <DishDetail dish={detailDish} lang={lang} onBack={goBack} onOpenMedia={openMedia} />
+            <DishDetail
+              key={detailDish.id}
+              dish={detailDish}
+              dishes={visible}
+              lang={lang}
+              onBack={goBack}
+              onOpenMedia={openMedia}
+              onOpenDish={openDish}
+            />
           ) : (
             // Dish was hidden/deleted while open — fall back to Home content.
             <Home

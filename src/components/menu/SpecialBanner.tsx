@@ -85,11 +85,13 @@ export function SpecialBanner({
         <div
           className="font-display"
           style={{
-            fontSize: "26px",
+            fontSize: "24px",
             fontWeight: 700,
             color: "var(--cream)",
-            lineHeight: 1.1,
+            lineHeight: 1.12,
             marginTop: "7px",
+            letterSpacing: "0.02em",
+            textTransform: "uppercase",
           }}
         >
           {name}
