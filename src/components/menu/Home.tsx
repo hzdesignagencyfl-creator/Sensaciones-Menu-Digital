@@ -43,29 +43,33 @@ export function Home({
   const [query, setQuery] = useState("");
   const q = query.trim().toLowerCase();
 
+  const bySort = (a: Dish, b: Dish) => a.sort_order - b.sort_order;
+
   const results = useMemo(() => {
     if (!q) return null;
-    return dishes.filter((d) =>
-      [
-        d.name_en,
-        d.name_es,
-        ...d.ingredients_en,
-        ...d.ingredients_es,
-        categoryLabel(d.category, "en"),
-        categoryLabel(d.category, "es"),
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(q),
-    );
+    return dishes
+      .filter((d) =>
+        [
+          d.name_en,
+          d.name_es,
+          ...d.ingredients_en,
+          ...d.ingredients_es,
+          categoryLabel(d.category, "en"),
+          categoryLabel(d.category, "es"),
+        ]
+          .join(" ")
+          .toLowerCase()
+          .includes(q),
+      )
+      .sort(bySort);
   }, [dishes, q]);
 
   const popular = useMemo(
-    () => dishes.filter((d) => d.badge_popular).slice(0, 4),
+    () => dishes.filter((d) => d.badge_popular).sort(bySort).slice(0, 4),
     [dishes],
   );
   const fresh = useMemo(
-    () => dishes.filter((d) => d.badge_new).slice(0, 4),
+    () => dishes.filter((d) => d.badge_new).sort(bySort).slice(0, 4),
     [dishes],
   );
 

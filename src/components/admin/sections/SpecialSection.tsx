@@ -26,6 +26,10 @@ export function SpecialSection({
   }
 
   async function upload(rawFile: File) {
+    if (rawFile.size > 15 * 1024 * 1024) {
+      alert("File is too large (max 15 MB for photos).");
+      return;
+    }
     const supabase = getSupabaseBrowser();
     if (!supabase) {
       set("photo_url", URL.createObjectURL(rawFile));
@@ -86,8 +90,12 @@ export function SpecialSection({
               <input
                 type="number"
                 step="0.01"
+                min="0"
                 value={form.price ?? ""}
-                onChange={(e) => set("price", e.target.value === "" ? null : Number(e.target.value))}
+                onChange={(e) => {
+                  const n = e.target.value === "" ? null : Number(e.target.value);
+                  set("price", n == null || Number.isNaN(n) ? null : Math.max(0, n));
+                }}
                 style={{ ...ui.input, paddingLeft: "24px" }}
               />
             </div>

@@ -82,6 +82,12 @@ export function DishEditForm({
 
   /** Uploads to Storage and returns the public URL (or an object URL in preview mode). */
   async function uploadToStorage(rawFile: File, kind: "image" | "video"): Promise<string | null> {
+    // Every menu visitor downloads these — refuse unreasonable sizes up front.
+    const maxMb = kind === "image" ? 15 : 60;
+    if (rawFile.size > maxMb * 1024 * 1024) {
+      alert(`File is too large (max ${maxMb} MB for ${kind === "image" ? "photos" : "videos"}).`);
+      return null;
+    }
     const supabase = getSupabaseBrowser();
     if (!supabase) {
       // Preview mode — show a local object URL (won't persist).
@@ -152,9 +158,13 @@ export function DishEditForm({
                 <input
                   type="number"
                   step="0.01"
+                  min="0"
                   disabled={form.market_price}
                   value={form.price ?? ""}
-                  onChange={(e) => set("price", e.target.value === "" ? null : Number(e.target.value))}
+                  onChange={(e) => {
+                    const n = e.target.value === "" ? null : Number(e.target.value);
+                    set("price", n == null || Number.isNaN(n) ? null : Math.max(0, n));
+                  }}
                   style={{ ...ui.input, paddingLeft: "24px", opacity: form.market_price ? 0.5 : 1 }}
                 />
               </div>

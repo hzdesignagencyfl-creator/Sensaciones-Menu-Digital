@@ -126,6 +126,11 @@ export function MenuApp({ initial }: { initial: MenuData }) {
     scrollRef.current?.scrollTo({ top: 0 });
   }, [view]);
 
+  // Keep the document language in sync for screen readers / translators.
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
+
   // Realtime: reflect admin availability / special edits instantly.
   useEffect(() => {
     const supabase = getSupabaseBrowser();

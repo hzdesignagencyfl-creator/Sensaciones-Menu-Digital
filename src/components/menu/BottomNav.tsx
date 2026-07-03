@@ -1,6 +1,7 @@
 "use client";
 
 import { STR } from "@/lib/data/menu-meta";
+import { safeExternalUrl } from "@/lib/format";
 import type { Lang } from "@/lib/types";
 
 export type NavTab = "home" | "categories";
@@ -18,6 +19,7 @@ export function BottomNav({
   onSelect: (tab: NavTab) => void;
 }) {
   const t = STR[lang];
+  const safeReviewUrl = safeExternalUrl(reviewUrl);
 
   return (
     <div
@@ -69,18 +71,20 @@ export function BottomNav({
             </svg>
           }
         />
-        <a
-          href={reviewUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={t.review}
-          title={t.review}
-          style={{ ...itemStyle(false), textDecoration: "none" }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--gold-light)" stroke="var(--gold-light)" strokeWidth="1" strokeLinejoin="round">
-            <polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18 5.5 22 7 14.5 2 9.5 9 9" />
-          </svg>
-        </a>
+        {safeReviewUrl && (
+          <a
+            href={safeReviewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={t.review}
+            title={t.review}
+            style={{ ...itemStyle(false), textDecoration: "none" }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--gold-light)" stroke="var(--gold-light)" strokeWidth="1" strokeLinejoin="round">
+              <polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18 5.5 22 7 14.5 2 9.5 9 9" />
+            </svg>
+          </a>
+        )}
       </nav>
     </div>
   );

@@ -26,3 +26,18 @@ export function dishDesc(dish: Dish, lang: Lang): string {
 export function dishIngredients(dish: Dish, lang: Lang): string[] {
   return lang === "en" ? dish.ingredients_en : dish.ingredients_es;
 }
+
+/**
+ * Admin-stored URLs end up in href attributes — only ever emit http(s) so a
+ * poisoned settings row can't smuggle a javascript: URL into the public menu.
+ */
+export function safeExternalUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    if (u.protocol === "http:" || u.protocol === "https:") return u.href;
+  } catch {
+    // not a parseable absolute URL
+  }
+  return null;
+}
