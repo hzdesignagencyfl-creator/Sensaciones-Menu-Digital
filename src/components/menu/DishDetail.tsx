@@ -18,14 +18,18 @@ export function DishDetail({
   dish,
   dishes,
   lang,
+  fav,
+  onToggleFav,
   onBack,
   onOpenMedia,
   onOpenDish,
 }: {
   dish: Dish;
-  /** All visible dishes — source for pairing / related suggestions. */
+  /** All visible dishes — source for pairing suggestions. */
   dishes: Dish[];
   lang: Lang;
+  fav: boolean;
+  onToggleFav: (id: string) => void;
   onBack: () => void;
   onOpenMedia: (dish: Dish, index: number) => void;
   onOpenDish: (dish: Dish) => void;
@@ -48,15 +52,6 @@ export function DishDetail({
     return [...sides.slice(0, 4), ...drinks.slice(0, 2)].slice(0, SUGGESTION_LIMIT);
   }, [dishes, dish.category]);
 
-  const related = useMemo(
-    () =>
-      dishes
-        .filter((d) => d.category === dish.category && d.id !== dish.id)
-        .sort((a, b) => a.sort_order - b.sort_order)
-        .slice(0, SUGGESTION_LIMIT),
-    [dishes, dish.category, dish.id],
-  );
-
   function go(delta: number) {
     setPhotoIdx((i) => Math.max(0, Math.min(photos.length - 1, i + delta)));
   }
@@ -71,7 +66,41 @@ export function DishDetail({
 
   return (
     <div style={{ animation: "fadeIn 0.25s ease" }}>
-      <ScreenHeader title={t.details} onBack={onBack} />
+      <ScreenHeader
+        title={t.details}
+        onBack={onBack}
+        action={
+          <button
+            onClick={() => onToggleFav(dish.id)}
+            aria-label={fav ? t.favRemove : t.favAdd}
+            title={fav ? t.favRemove : t.favAdd}
+            style={{
+              width: "38px",
+              height: "38px",
+              border: "none",
+              borderRadius: "999px",
+              background: fav ? "rgba(196,163,90,0.16)" : "transparent",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+            }}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill={fav ? "var(--gold-primary)" : "none"}
+              stroke={fav ? "var(--gold-primary)" : "var(--charcoal)"}
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+            </svg>
+          </button>
+        }
+      />
 
       <div style={{ padding: "16px 0 40px" }}>
         {/* Photo carousel */}
@@ -270,11 +299,6 @@ export function DishDetail({
         {/* Pair it with */}
         {pairings.length > 0 && (
           <SuggestionRow title={t.pairWith} dishes={pairings} lang={lang} onOpenDish={onOpenDish} />
-        )}
-
-        {/* You may also like */}
-        {related.length > 0 && (
-          <SuggestionRow title={t.alsoLike} dishes={related} lang={lang} onOpenDish={onOpenDish} />
         )}
       </div>
     </div>

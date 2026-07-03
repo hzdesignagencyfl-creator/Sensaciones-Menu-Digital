@@ -11,12 +11,16 @@ export function CategoryView({
   cat,
   dishes,
   lang,
+  favIds,
+  onToggleFav,
   onBack,
   onOpenDish,
 }: {
   cat: CategoryId;
   dishes: Dish[];
   lang: Lang;
+  favIds: Set<string>;
+  onToggleFav: (id: string) => void;
   onBack: () => void;
   onOpenDish: (dish: Dish) => void;
 }) {
@@ -94,7 +98,7 @@ export function CategoryView({
       )}
 
       <div style={{ padding: "16px 0 96px" }}>
-        <DishGrid dishes={list} lang={lang} onOpen={onOpenDish} />
+        <DishGrid dishes={list} lang={lang} favIds={favIds} onToggleFav={onToggleFav} onOpen={onOpenDish} />
       </div>
     </div>
   );

@@ -25,6 +25,8 @@ export function Home({
   dishes,
   special,
   lang,
+  favIds,
+  onToggleFav,
   onLang,
   onOpenCategory,
   onOpenDish,
@@ -33,6 +35,8 @@ export function Home({
   dishes: Dish[];
   special: Special;
   lang: Lang;
+  favIds: Set<string>;
+  onToggleFav: (id: string) => void;
   onLang: (l: Lang) => void;
   onOpenCategory: (cat: CategoryId) => void;
   onOpenDish: (dish: Dish) => void;
@@ -164,7 +168,7 @@ export function Home({
       {q ? (
         /* Search results grid */
         <div style={{ padding: "16px 0 90px" }}>
-          <DishGrid dishes={results ?? []} lang={lang} onOpen={onOpenDish} />
+          <DishGrid dishes={results ?? []} lang={lang} favIds={favIds} onToggleFav={onToggleFav} onOpen={onOpenDish} />
         </div>
       ) : (
         <>
@@ -205,12 +209,12 @@ export function Home({
             viewAllLabel={t.viewAll}
             onViewAll={() => onOpenCategory("popular")}
           >
-            <DishGrid dishes={popular} lang={lang} onOpen={onOpenDish} />
+            <DishGrid dishes={popular} lang={lang} favIds={favIds} onToggleFav={onToggleFav} onOpen={onOpenDish} />
           </Section>
 
           {chefPicks.length > 0 && (
             <Section title={t.chefSection}>
-              <DishGrid dishes={chefPicks} lang={lang} onOpen={onOpenDish} />
+              <DishGrid dishes={chefPicks} lang={lang} favIds={favIds} onToggleFav={onToggleFav} onOpen={onOpenDish} />
             </Section>
           )}
 
@@ -227,7 +231,7 @@ export function Home({
                 viewAllLabel={t.viewAll}
                 onViewAll={() => onOpenCategory(cat)}
               >
-                <DishGrid dishes={list} lang={lang} onOpen={onOpenDish} />
+                <DishGrid dishes={list} lang={lang} favIds={favIds} onToggleFav={onToggleFav} onOpen={onOpenDish} />
               </Section>
             );
           })}

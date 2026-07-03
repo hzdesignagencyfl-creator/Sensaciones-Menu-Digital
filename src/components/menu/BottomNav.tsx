@@ -4,17 +4,19 @@ import { STR } from "@/lib/data/menu-meta";
 import { safeExternalUrl } from "@/lib/format";
 import type { Lang } from "@/lib/types";
 
-export type NavTab = "home" | "categories";
+export type NavTab = "home" | "categories" | "favorites";
 
-/** Floating dark pill navigation: Home, Categories, Google review. */
+/** Floating dark pill navigation: Home, Categories, My Picks, Google review. */
 export function BottomNav({
   active,
   lang,
+  favCount,
   reviewUrl,
   onSelect,
 }: {
   active: NavTab;
   lang: Lang;
+  favCount: number;
   reviewUrl: string;
   onSelect: (tab: NavTab) => void;
 }) {
@@ -71,6 +73,17 @@ export function BottomNav({
             </svg>
           }
         />
+        <NavItem
+          label={t.favs}
+          active={active === "favorites"}
+          onClick={() => onSelect("favorites")}
+          badge={favCount}
+          icon={
+            <svg width="16" height="16" viewBox="0 0 24 24" fill={favCount > 0 ? "var(--gold-light)" : "none"} stroke={favCount > 0 ? "var(--gold-light)" : "currentColor"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+            </svg>
+          }
+        />
         {safeReviewUrl && (
           <a
             href={safeReviewUrl}
@@ -114,18 +127,42 @@ function NavItem({
   label,
   icon,
   active,
+  badge = 0,
   onClick,
 }: {
   label: string;
   icon: React.ReactNode;
   active: boolean;
+  badge?: number;
   onClick: () => void;
 }) {
   return (
-    <button onClick={onClick} style={itemStyle(active)}>
+    <button onClick={onClick} style={{ ...itemStyle(active), position: "relative" }}>
       {icon}
       {/* Collapse inactive labels so the pill stays compact like the reference */}
       {active && <span>{label}</span>}
+      {badge > 0 && (
+        <span
+          style={{
+            position: "absolute",
+            top: "2px",
+            right: active ? "2px" : "5px",
+            minWidth: "16px",
+            height: "16px",
+            borderRadius: "999px",
+            background: "var(--gold-primary)",
+            color: "var(--teal-dark)",
+            fontSize: "10px",
+            fontWeight: 700,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "0 4px",
+          }}
+        >
+          {badge > 9 ? "9+" : badge}
+        </span>
+      )}
     </button>
   );
 }

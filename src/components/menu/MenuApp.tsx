@@ -15,12 +15,15 @@ import { CategoriesView } from "./CategoriesView";
 import { CategoryView } from "./CategoryView";
 import { Cover } from "./Cover";
 import { DishDetail } from "./DishDetail";
+import { FavoritesView } from "./FavoritesView";
 import { Home } from "./Home";
 import { MediaLightbox } from "./MediaLightbox";
+import { ScrollTopButton } from "./ScrollTopButton";
 import { SpecialDetail } from "./SpecialDetail";
 
 const LANG_KEY = "sensaciones_lang";
 const COVER_KEY = "sensaciones_cover_seen";
+const FAVS_KEY = "sensaciones_favs";
 
 /** Client-side view machine. The view is encoded in the URL hash (#cat=…,
  *  #dish=…) rather than in history state: Next's App Router owns and rewrites
@@ -32,7 +35,8 @@ type View =
   | { screen: "categories" }
   | { screen: "category"; cat: CategoryId }
   | { screen: "detail"; dishId: string }
-  | { screen: "special" };
+  | { screen: "special" }
+  | { screen: "favorites" };
 
 const CATEGORY_IDS: CategoryId[] = [
   "popular", "breakfast", "appetizers", "soups", "sandwiches", "pastas",
@@ -45,6 +49,7 @@ function viewToHash(v: View): string {
     case "category": return `#cat=${v.cat}`;
     case "detail": return `#dish=${encodeURIComponent(v.dishId)}`;
     case "special": return "#special";
+    case "favorites": return "#favs";
     default: return "#home";
   }
 }
@@ -53,6 +58,7 @@ function hashToView(hash: string): View {
   const h = hash.replace(/^#/, "");
   if (h === "categories") return { screen: "categories" };
   if (h === "special") return { screen: "special" };
+  if (h === "favs") return { screen: "favorites" };
   if (h.startsWith("cat=")) {
     const cat = h.slice(4) as CategoryId;
     if (CATEGORY_IDS.includes(cat)) return { screen: "category", cat };
@@ -71,6 +77,9 @@ export function MenuApp({ initial }: { initial: MenuData }) {
   const [dishes, setDishes] = useState<Dish[]>(initial.dishes);
   const [special, setSpecial] = useState<Special>(initial.special);
   const [lightbox, setLightbox] = useState<{ source: Dish | Special; index: number } | null>(null);
+  // Diner's saved dish ids ("My Picks"), persisted on the device.
+  const [favs, setFavs] = useState<string[]>([]);
+  const [showTop, setShowTop] = useState(false);
   const didOpen = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   // How many in-app navigations we have pushed; guards goBack on deep links.
@@ -130,6 +139,29 @@ export function MenuApp({ initial }: { initial: MenuData }) {
   useEffect(() => {
     document.documentElement.lang = lang;
   }, [lang]);
+
+  // Restore saved dishes (post-hydration for the same reason as the language).
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(FAVS_KEY);
+      const parsed: unknown = raw ? JSON.parse(raw) : null;
+      if (Array.isArray(parsed)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setFavs(parsed.filter((x): x is string => typeof x === "string").slice(0, 100));
+      }
+    } catch {
+      // storage blocked or corrupted — start with an empty list
+    }
+  }, []);
+
+  // Show the scroll-to-top button once the visitor has scrolled a screenful.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const onScroll = () => setShowTop(el.scrollTop > 500);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
 
   // Realtime: reflect admin availability / special edits instantly.
   useEffect(() => {
@@ -203,6 +235,18 @@ export function MenuApp({ initial }: { initial: MenuData }) {
     }
   }
 
+  function toggleFav(id: string) {
+    setFavs((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      try {
+        window.localStorage.setItem(FAVS_KEY, JSON.stringify(next));
+      } catch {
+        // storage blocked — the list just won't survive a reload
+      }
+      return next;
+    });
+  }
+
   function enterMenu() {
     setCoverOpen(false);
     try {
@@ -236,36 +280,73 @@ export function MenuApp({ initial }: { initial: MenuData }) {
     [dishes],
   );
 
+  const favIds = useMemo(() => new Set(favs), [favs]);
+  // Saved dishes in the order they were added; hidden/deleted ones drop out.
+  const favDishes = useMemo(
+    () =>
+      favs
+        .map((id) => visible.find((d) => d.id === id))
+        .filter((d): d is Dish => Boolean(d)),
+    [favs, visible],
+  );
+
   // Detail dish is derived from live state so realtime edits show instantly.
   const detailDish =
     view.screen === "detail" ? visible.find((d) => d.id === view.dishId) : undefined;
   // If the admin deactivates the special while someone is viewing it, fall back home.
   const specialOpen = view.screen === "special" && special.active;
 
-  const navTab: NavTab = view.screen === "categories" ? "categories" : "home";
+  const navTab: NavTab =
+    view.screen === "categories"
+      ? "categories"
+      : view.screen === "favorites"
+        ? "favorites"
+        : "home";
   // Hidden on detail screens and while the welcome cover is up.
   const showNav =
     !coverOpen && !specialOpen && (view.screen !== "detail" || !detailDish);
 
+  // Home is also the fallback when a deep-linked dish/special no longer exists.
+  const homeEl = (
+    <Home
+      dishes={visible}
+      special={special}
+      lang={lang}
+      favIds={favIds}
+      onToggleFav={toggleFav}
+      onLang={changeLang}
+      onOpenCategory={openCategory}
+      onOpenDish={openDish}
+      onOpenSpecial={() => openSpecial(special)}
+    />
+  );
+
   return (
     <div className="menu-shell">
       <div ref={scrollRef} className="hide-scroll menu-scroll" style={{ position: "relative" }}>
-        {view.screen === "home" && (
-          <Home
-            dishes={visible}
-            special={special}
-            lang={lang}
-            onLang={changeLang}
-            onOpenCategory={openCategory}
-            onOpenDish={openDish}
-            onOpenSpecial={() => openSpecial(special)}
-          />
-        )}
+        {view.screen === "home" && homeEl}
         {view.screen === "categories" && (
           <CategoriesView dishes={visible} lang={lang} onBack={goBack} onOpenCategory={openCategory} />
         )}
         {view.screen === "category" && (
-          <CategoryView cat={view.cat} dishes={visible} lang={lang} onBack={goBack} onOpenDish={openDish} />
+          <CategoryView
+            cat={view.cat}
+            dishes={visible}
+            lang={lang}
+            favIds={favIds}
+            onToggleFav={toggleFav}
+            onBack={goBack}
+            onOpenDish={openDish}
+          />
+        )}
+        {view.screen === "favorites" && (
+          <FavoritesView
+            dishes={favDishes}
+            lang={lang}
+            onBack={goBack}
+            onToggleFav={toggleFav}
+            onOpenDish={openDish}
+          />
         )}
         {view.screen === "special" && specialOpen && (
           <SpecialDetail
@@ -275,17 +356,7 @@ export function MenuApp({ initial }: { initial: MenuData }) {
             onOpenMedia={() => setLightbox({ source: special, index: 0 })}
           />
         )}
-        {view.screen === "special" && !specialOpen && (
-          <Home
-            dishes={visible}
-            special={special}
-            lang={lang}
-            onLang={changeLang}
-            onOpenCategory={openCategory}
-            onOpenDish={openDish}
-            onOpenSpecial={() => openSpecial(special)}
-          />
-        )}
+        {view.screen === "special" && !specialOpen && homeEl}
         {view.screen === "detail" &&
           (detailDish ? (
             <DishDetail
@@ -293,35 +364,36 @@ export function MenuApp({ initial }: { initial: MenuData }) {
               dish={detailDish}
               dishes={visible}
               lang={lang}
+              fav={favIds.has(detailDish.id)}
+              onToggleFav={toggleFav}
               onBack={goBack}
               onOpenMedia={openMedia}
               onOpenDish={openDish}
             />
           ) : (
             // Dish was hidden/deleted while open — fall back to Home content.
-            <Home
-              dishes={visible}
-              special={special}
-              lang={lang}
-              onLang={changeLang}
-              onOpenCategory={openCategory}
-              onOpenDish={openDish}
-              onOpenSpecial={() => openSpecial(special)}
-            />
+            homeEl
           ))}
       </div>
+
+      {showTop && !coverOpen && (
+        <ScrollTopButton onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })} />
+      )}
 
       {showNav && (
         <BottomNav
           active={navTab}
           lang={lang}
+          favCount={favDishes.length}
           reviewUrl={initial.settings.google_review_url}
           onSelect={(tab) => {
-            if (tab === "home") {
-              if (view.screen !== "home") navigate({ screen: "home" });
-            } else if (view.screen !== "categories") {
-              navigate({ screen: "categories" });
-            }
+            const target: View =
+              tab === "home"
+                ? { screen: "home" }
+                : tab === "categories"
+                  ? { screen: "categories" }
+                  : { screen: "favorites" };
+            if (view.screen !== target.screen) navigate(target);
           }}
         />
       )}

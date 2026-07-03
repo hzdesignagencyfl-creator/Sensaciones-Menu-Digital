@@ -10,10 +10,14 @@ import { DishPhoto } from "./DishPhoto";
 export function GridCard({
   dish,
   lang,
+  fav = false,
+  onToggleFav,
   onOpen,
 }: {
   dish: Dish;
   lang: Lang;
+  fav?: boolean;
+  onToggleFav?: (id: string) => void;
   onOpen: (dish: Dish) => void;
 }) {
   const t = STR[lang];
@@ -23,12 +27,49 @@ export function GridCard({
     <div onClick={() => onOpen(dish)} style={{ cursor: "pointer" }}>
       <div style={{ position: "relative", borderRadius: "14px", overflow: "hidden" }}>
         <DishPhoto src={dish.photo_url} alt={dishName(dish, lang)} height={150} grayscale={unavailable} />
+        {onToggleFav && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFav(dish.id);
+            }}
+            aria-label={fav ? t.favRemove : t.favAdd}
+            style={{
+              position: "absolute",
+              top: "8px",
+              right: "8px",
+              width: "28px",
+              height: "28px",
+              border: "none",
+              borderRadius: "999px",
+              background: "rgba(30,30,30,0.45)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              backdropFilter: "blur(3px)",
+            }}
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill={fav ? "var(--gold-primary)" : "none"}
+              stroke={fav ? "var(--gold-primary)" : "var(--cream)"}
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+            </svg>
+          </button>
+        )}
         {dish.video_url && (
           <span
             style={{
               position: "absolute",
               top: "8px",
-              right: "8px",
+              left: "8px",
               width: "26px",
               height: "26px",
               borderRadius: "999px",
@@ -100,11 +141,15 @@ export function GridCard({
 export function DishGrid({
   dishes,
   lang,
+  favIds,
+  onToggleFav,
   onOpen,
   emptyLabel,
 }: {
   dishes: Dish[];
   lang: Lang;
+  favIds?: Set<string>;
+  onToggleFav?: (id: string) => void;
   onOpen: (dish: Dish) => void;
   emptyLabel?: string;
 }) {
@@ -118,7 +163,14 @@ export function DishGrid({
   return (
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px 14px", padding: "0 16px" }}>
       {dishes.map((d) => (
-        <GridCard key={d.id} dish={d} lang={lang} onOpen={onOpen} />
+        <GridCard
+          key={d.id}
+          dish={d}
+          lang={lang}
+          fav={favIds?.has(d.id)}
+          onToggleFav={onToggleFav}
+          onOpen={onOpen}
+        />
       ))}
     </div>
   );
