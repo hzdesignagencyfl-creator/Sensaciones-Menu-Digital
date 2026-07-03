@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { STR } from "@/lib/data/menu-meta";
 import { dishDesc, dishIngredients, dishName, formatPrice } from "@/lib/format";
+import { dishPhotoList } from "@/lib/types";
 import type { Dish, Lang } from "@/lib/types";
 import { Badges } from "./Badges";
 import { DishPhoto } from "./DishPhoto";
@@ -73,7 +74,7 @@ export function DishCard({
             transition: "transform 0.34s cubic-bezier(0.25,0.46,0.45,0.94)",
           }}
         >
-          {/* Photo panel */}
+          {/* Photo panel — tapping it opens the dish detail sheet */}
           <div
             style={{
               flex: "0 0 50%",
@@ -82,7 +83,7 @@ export function DishCard({
               overflow: "hidden",
               cursor: "pointer",
             }}
-            onClick={() => onOpenMedia(dish, 0)}
+            onClick={() => onOpen(dish)}
           >
             <DishPhoto src={dish.photo_url} alt={name} height={236} grayscale={unavailable} />
 
@@ -126,30 +127,6 @@ export function DishCard({
                   </svg>
                 </button>
               )}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpen(dish);
-                }}
-                aria-label="Expand"
-                style={{
-                  width: "34px",
-                  height: "34px",
-                  border: "none",
-                  borderRadius: "999px",
-                  background: "rgba(30,30,30,0.4)",
-                  color: "var(--cream)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  backdropFilter: "blur(4px)",
-                }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-                </svg>
-              </button>
             </div>
 
             {unavailable && (
@@ -187,7 +164,7 @@ export function DishCard({
               justifyContent: "center",
               cursor: dish.video_url ? "pointer" : "default",
             }}
-            onClick={() => dish.video_url && onOpenMedia(dish, 1)}
+            onClick={() => dish.video_url && onOpenMedia(dish, dishPhotoList(dish).length)}
           >
             {dish.video_url && videoLoaded ? (
               <video

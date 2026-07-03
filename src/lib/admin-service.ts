@@ -49,7 +49,18 @@ export async function saveDish(dish: Dish): Promise<void> {
   const supabase = getSupabaseBrowser();
   if (!supabase) return;
   const { error } = await supabase.from("dishes").upsert(dish);
-  if (error) throw error;
+  if (error) {
+    // Databases created before the multi-photo migration lack photo_urls —
+    // retry without it so dish edits keep working until the SQL is applied.
+    if (/photo_urls/.test(error.message)) {
+      const { photo_urls: _omit, ...legacy } = dish;
+      void _omit;
+      const retry = await supabase.from("dishes").upsert(legacy);
+      if (retry.error) throw retry.error;
+      return;
+    }
+    throw error;
+  }
 }
 
 export async function deleteDish(id: string): Promise<void> {

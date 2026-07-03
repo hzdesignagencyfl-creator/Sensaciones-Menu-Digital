@@ -30,6 +30,7 @@ function blankDish(sortOrder: number): Dish {
     ingredients_en: [],
     ingredients_es: [],
     photo_url: null,
+    photo_urls: [],
     video_url: null,
     status: "visible",
     available_today: true,
@@ -79,29 +80,39 @@ export function DishEditForm({
     onSave({ ...form, id });
   }
 
-  async function uploadFile(rawFile: File, field: "photo_url" | "video_url") {
+  /** Uploads to Storage and returns the public URL (or an object URL in preview mode). */
+  async function uploadToStorage(rawFile: File, kind: "image" | "video"): Promise<string | null> {
     const supabase = getSupabaseBrowser();
     if (!supabase) {
       // Preview mode — show a local object URL (won't persist).
-      set(field, URL.createObjectURL(rawFile));
-      return;
+      return URL.createObjectURL(rawFile);
     }
     setUploading(true);
     try {
       // Photos get resized/re-encoded client-side; videos upload as-is.
-      const file = field === "photo_url" ? await compressImage(rawFile) : rawFile;
-      const bucket = field === "photo_url" ? "dish-photos" : "dish-videos";
+      const file = kind === "image" ? await compressImage(rawFile) : rawFile;
+      const bucket = kind === "image" ? "dish-photos" : "dish-videos";
       const path = `${slugify(form.name_en) || "dish"}-${Date.now()}-${safeStorageName(file.name)}`;
       const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
       if (error) throw error;
-      const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-      set(field, data.publicUrl);
+      return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
     } catch (e) {
       console.error(e);
       alert("Upload failed. Make sure the storage bucket exists (see SETUP.md).");
+      return null;
     } finally {
       setUploading(false);
     }
+  }
+
+  async function uploadFile(rawFile: File, field: "photo_url" | "video_url") {
+    const url = await uploadToStorage(rawFile, field === "photo_url" ? "image" : "video");
+    if (url) set(field, url);
+  }
+
+  async function addExtraPhoto(rawFile: File) {
+    const url = await uploadToStorage(rawFile, "image");
+    if (url) set("photo_urls", [...(form.photo_urls ?? []), url]);
   }
 
   return (
@@ -191,6 +202,69 @@ export function DishEditForm({
               onPick={(file) => uploadFile(file, "photo_url")}
               onClear={() => set("photo_url", null)}
             />
+          </SideCard>
+
+          <SideCard title="More photos (swipeable gallery)">
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+              {(form.photo_urls ?? []).map((url, i) => (
+                <div key={`${url}-${i}`} style={{ position: "relative", width: "76px", height: "58px" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt={`photo ${i + 2}`} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "8px" }} />
+                  <button
+                    onClick={() =>
+                      set("photo_urls", (form.photo_urls ?? []).filter((_, j) => j !== i))
+                    }
+                    aria-label="Remove photo"
+                    style={{
+                      position: "absolute",
+                      top: "-6px",
+                      right: "-6px",
+                      width: "20px",
+                      height: "20px",
+                      borderRadius: "999px",
+                      border: "none",
+                      background: "var(--error)",
+                      color: "#fff",
+                      fontSize: "12px",
+                      lineHeight: 1,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <label
+                style={{
+                  width: "76px",
+                  height: "58px",
+                  border: "2px dashed #CFC9C1",
+                  borderRadius: "8px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  color: "var(--body-text)",
+                  fontSize: "20px",
+                }}
+                title="Add photo"
+              >
+                {uploading ? "…" : "+"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ display: "none" }}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void addExtraPhoto(f);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            </div>
           </SideCard>
 
           <SideCard title="Video (optional, looping)">

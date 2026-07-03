@@ -107,8 +107,12 @@ export function AdminApp() {
     }
   }
 
-  /** Moves a dish one position up/down within its category. */
-  async function handleMoveDish(id: string, dir: -1 | 1) {
+  /**
+   * Drops a dish at a new position within its category.
+   * `insertAt` is the insertion index in the category's current sorted list
+   * (0 = before the first row, list.length = after the last).
+   */
+  async function handleReorderDish(id: string, insertAt: number) {
     if (!bundle) return;
     const dish = bundle.dishes.find((d) => d.id === id);
     if (!dish) return;
@@ -116,11 +120,13 @@ export function AdminApp() {
     const catList = bundle.dishes
       .filter((d) => d.category === dish.category)
       .sort((a, b) => a.sort_order - b.sort_order);
-    const idx = catList.findIndex((d) => d.id === id);
-    const target = idx + dir;
-    if (target < 0 || target >= catList.length) return;
+    const from = catList.findIndex((d) => d.id === id);
+    if (from === -1) return;
+    // Removing the dish first shifts insertion points that come after it.
+    const to = Math.max(0, Math.min(from < insertAt ? insertAt - 1 : insertAt, catList.length - 1));
+    if (to === from) return;
 
-    // The category's sort_order values, made strictly increasing so swaps
+    // The category's sort_order values, made strictly increasing so moves
     // always take effect even if old rows share a value (legacy 999s).
     const values = catList.map((d) => d.sort_order);
     for (let i = 1; i < values.length; i++) {
@@ -128,7 +134,8 @@ export function AdminApp() {
     }
 
     const reordered = [...catList];
-    [reordered[idx], reordered[target]] = [reordered[target], reordered[idx]];
+    const [moved] = reordered.splice(from, 1);
+    reordered.splice(to, 0, moved);
 
     const updates: { id: string; sort_order: number }[] = [];
     reordered.forEach((d, i) => {
@@ -262,7 +269,7 @@ export function AdminApp() {
                       onAddNew={() => setCreating(true)}
                       onToggleAvailability={handleToggleAvailability}
                       onDelete={handleDeleteDish}
-                      onMove={handleMoveDish}
+                      onReorder={handleReorderDish}
                       onDuplicate={handleDuplicateDish}
                     />
                   )

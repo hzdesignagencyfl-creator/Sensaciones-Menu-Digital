@@ -53,6 +53,16 @@ export function photoFor(id: string): string | null {
   return f ? `/images/food/${f}` : null;
 }
 
+/** dish id → extra gallery photos beyond the cover (swipeable in the lightbox). */
+const EXTRA_PHOTOS: Record<string, string[]> = {
+  "brunch-burger": ["brunch-burger-sensaciones-2-fort-myers.webp"],
+  "sourdough-toast": ["sourdough-toast-sensaciones-2-fort-myers.webp"],
+};
+
+export function extraPhotosFor(id: string): string[] {
+  return (EXTRA_PHOTOS[id] ?? []).map((f) => `/images/food/${f}`);
+}
+
 const RAW: RawDish[] = [
   // ── BREAKFAST & BRUNCH ──
   ["eggs-bacon", "breakfast", "Eggs & Bacon", "Huevos y Tocino", 14.95, "Two eggs your way, crispy bacon, toast and home fries.", "Dos huevos a tu gusto, tocino crujiente, tostadas y papas caseras.", ["Eggs", "Bacon", "Toast", "Home fries"], ["Huevos", "Tocino", "Tostadas", "Papas"], [], 0],
@@ -166,6 +176,7 @@ function build(r: RawDish, index: number): Dish {
     ingredients_en: i_en,
     ingredients_es: i_es,
     photo_url: photoFor(id),
+    photo_urls: extraPhotosFor(id),
     video_url: null,
     status: "visible",
     available_today: true,

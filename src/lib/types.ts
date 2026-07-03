@@ -31,6 +31,8 @@ export interface Dish {
   ingredients_en: string[];
   ingredients_es: string[];
   photo_url: string | null;
+  /** Extra gallery photos beyond the cover (may be undefined before the DB migration runs). */
+  photo_urls?: string[] | null;
   video_url: string | null;
   status: "visible" | "hidden";
   available_today: boolean;
@@ -74,6 +76,17 @@ export interface AnalyticsEvent {
   category?: string | null;
   lang?: Lang | null;
   session_id: string;
+}
+
+/** All photos of a dish in display order: cover first, then extras. */
+export function dishPhotoList(d: {
+  photo_url: string | null;
+  photo_urls?: string[] | null;
+}): string[] {
+  const out: string[] = [];
+  if (d.photo_url) out.push(d.photo_url);
+  for (const p of d.photo_urls ?? []) if (p) out.push(p);
+  return out;
 }
 
 /** Helper: ordered list of badge ids that are active on a dish. */

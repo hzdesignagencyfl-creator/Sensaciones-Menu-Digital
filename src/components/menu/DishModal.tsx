@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { STR } from "@/lib/data/menu-meta";
 import { dishDesc, dishIngredients, dishName, formatPrice } from "@/lib/format";
+import { dishPhotoList } from "@/lib/types";
 import type { Dish, Lang } from "@/lib/types";
 import { Badges, Stars } from "./Badges";
 import { DishPhoto } from "./DishPhoto";
@@ -35,6 +36,7 @@ export function DishModal({
   const desc = dishDesc(dish, lang);
   const ingredients = dishIngredients(dish, lang);
   const unavailable = !dish.available_today;
+  const photoCount = dishPhotoList(dish).length;
 
   return (
     <div
@@ -65,6 +67,33 @@ export function DishModal({
         <div style={{ position: "relative" }}>
           <div style={{ cursor: "pointer" }} onClick={() => onOpenMedia(dish, 0)}>
             <DishPhoto src={dish.photo_url} alt={name} height={238} grayscale={unavailable} />
+            {photoCount > 1 && (
+              <span
+                style={{
+                  position: "absolute",
+                  right: "14px",
+                  bottom: unavailable ? "44px" : "14px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  background: "rgba(20,20,20,0.62)",
+                  color: "var(--cream)",
+                  borderRadius: "999px",
+                  padding: "5px 11px",
+                  fontSize: "11.5px",
+                  fontWeight: 600,
+                  backdropFilter: "blur(4px)",
+                  pointerEvents: "none",
+                }}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="7" width="18" height="13" rx="2" />
+                  <path d="M8 7l1.5-3h5L16 7" />
+                  <circle cx="12" cy="13" r="3.2" />
+                </svg>
+                1/{photoCount}
+              </span>
+            )}
           </div>
           <button
             onClick={(e) => {

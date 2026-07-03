@@ -1,10 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { dishPhotoList } from "@/lib/types";
 
 type MediaItem = { type: "photo" | "video"; src: string };
 /** Any menu entity with media — a Dish or the Today's Special. */
-export type LightboxSource = { photo_url: string | null; video_url?: string | null };
+export type LightboxSource = {
+  photo_url: string | null;
+  photo_urls?: string[] | null;
+  video_url?: string | null;
+};
 
 export function MediaLightbox({
   source,
@@ -16,8 +21,10 @@ export function MediaLightbox({
   onClose: () => void;
 }) {
   const items: MediaItem[] = [];
-  if (source?.photo_url) items.push({ type: "photo", src: source.photo_url });
-  if (source?.video_url) items.push({ type: "video", src: source.video_url });
+  if (source) {
+    for (const src of dishPhotoList(source)) items.push({ type: "photo", src });
+    if (source.video_url) items.push({ type: "video", src: source.video_url });
+  }
 
   const [index, setIndex] = useState(Math.min(initialIndex, Math.max(items.length - 1, 0)));
   const touchX = useRef(0);

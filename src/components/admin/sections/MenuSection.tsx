@@ -16,7 +16,7 @@ export function MenuSection({
   onAddNew,
   onToggleAvailability,
   onDelete,
-  onMove,
+  onReorder,
   onDuplicate,
 }: {
   dishes: Dish[];
@@ -25,11 +25,14 @@ export function MenuSection({
   onAddNew: () => void;
   onToggleAvailability: (id: string, available: boolean) => void;
   onDelete: (id: string) => void;
-  onMove: (id: string, dir: -1 | 1) => void;
+  onReorder: (id: string, insertAt: number) => void;
   onDuplicate: (d: Dish) => void;
 }) {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState<Record<string, boolean>>({ breakfast: true });
+  // Drag & drop reordering state (constrained to one category at a time).
+  const [drag, setDrag] = useState<{ id: string; cat: CategoryId } | null>(null);
+  const [dropAt, setDropAt] = useState<number | null>(null);
 
   const q = search.trim().toLowerCase();
   const byCat = useMemo(() => {
@@ -116,11 +119,34 @@ export function MenuSection({
                     <DishRow
                       key={d.id}
                       dish={d}
-                      // While searching the list is filtered, so neighbor
+                      // While searching the list is filtered, so drop
                       // positions are misleading — disable reordering.
-                      canMoveUp={!q && i > 0}
-                      canMoveDown={!q && i < list.length - 1}
-                      onMove={(dir) => onMove(d.id, dir)}
+                      draggable={!q}
+                      dragging={drag?.id === d.id}
+                      dropBefore={drag?.cat === g.id && dropAt === i}
+                      onDragStart={(e) => {
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("text/plain", d.id);
+                        setDrag({ id: d.id, cat: g.id });
+                      }}
+                      onDragOver={(e) => {
+                        if (drag?.cat !== g.id) return;
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const after = e.clientY > rect.top + rect.height / 2;
+                        setDropAt(i + (after ? 1 : 0));
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        if (drag?.cat === g.id && dropAt !== null) onReorder(drag.id, dropAt);
+                        setDrag(null);
+                        setDropAt(null);
+                      }}
+                      onDragEnd={() => {
+                        setDrag(null);
+                        setDropAt(null);
+                      }}
                       onDuplicate={() => onDuplicate(d)}
                       onEdit={() => onEdit(d)}
                       onToggle={(v) => onToggleAvailability(d.id, v)}
@@ -129,6 +155,10 @@ export function MenuSection({
                       }}
                     />
                   ))}
+                  {/* Drop line after the last row */}
+                  {drag?.cat === g.id && dropAt === list.length && (
+                    <div style={{ height: "2px", background: "var(--gold-primary)", margin: "0 18px" }} />
+                  )}
                   {list.length === 0 && (
                     <div style={{ padding: "16px 18px", fontSize: "13px", color: "var(--muted-text)" }}>No dishes yet.</div>
                   )}
@@ -144,18 +174,26 @@ export function MenuSection({
 
 function DishRow({
   dish,
-  canMoveUp,
-  canMoveDown,
-  onMove,
+  draggable,
+  dragging,
+  dropBefore,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
   onDuplicate,
   onEdit,
   onToggle,
   onDelete,
 }: {
   dish: Dish;
-  canMoveUp: boolean;
-  canMoveDown: boolean;
-  onMove: (dir: -1 | 1) => void;
+  draggable: boolean;
+  dragging: boolean;
+  dropBefore: boolean;
+  onDragStart: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragOver: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDrop: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragEnd: () => void;
   onDuplicate: () => void;
   onEdit: () => void;
   onToggle: (v: boolean) => void;
@@ -163,29 +201,33 @@ function DishRow({
 }) {
   const active = dish.status === "visible";
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "14px", padding: "12px 18px", borderTop: "1px solid var(--border-subtle)" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: "2px", flex: "0 0 auto" }}>
-        <button
-          onClick={() => onMove(-1)}
-          disabled={!canMoveUp}
-          title="Move up"
-          style={{ ...moveBtn, opacity: canMoveUp ? 1 : 0.25, cursor: canMoveUp ? "pointer" : "default" }}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6B6560" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m18 15-6-6-6 6" />
-          </svg>
-        </button>
-        <button
-          onClick={() => onMove(1)}
-          disabled={!canMoveDown}
-          title="Move down"
-          style={{ ...moveBtn, opacity: canMoveDown ? 1 : 0.25, cursor: canMoveDown ? "pointer" : "default" }}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6B6560" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m6 9 6 6 6-6" />
-          </svg>
-        </button>
-      </div>
+    <div
+      draggable={draggable}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "14px",
+        padding: "12px 18px",
+        borderTop: dropBefore ? "2px solid var(--gold-primary)" : "1px solid var(--border-subtle)",
+        opacity: dragging ? 0.35 : 1,
+        cursor: draggable ? "grab" : "default",
+        background: dragging ? "var(--cream-warm)" : undefined,
+      }}
+    >
+      <span title="Drag to reorder" style={{ flex: "0 0 auto", display: "flex", color: "#B8B2A9" }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="9" cy="5" r="1.6" />
+          <circle cx="15" cy="5" r="1.6" />
+          <circle cx="9" cy="12" r="1.6" />
+          <circle cx="15" cy="12" r="1.6" />
+          <circle cx="9" cy="19" r="1.6" />
+          <circle cx="15" cy="19" r="1.6" />
+        </svg>
+      </span>
       <Thumb src={dish.photo_url} alt={dish.name_en} />
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ fontSize: "14.5px", fontWeight: 600, color: "var(--charcoal)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -231,18 +273,6 @@ function DishRow({
     </div>
   );
 }
-
-const moveBtn: React.CSSProperties = {
-  width: "22px",
-  height: "18px",
-  border: "1px solid var(--border)",
-  borderRadius: "5px",
-  background: "var(--cream)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  padding: 0,
-};
 
 const iconBtn: React.CSSProperties = {
   flex: "0 0 auto",

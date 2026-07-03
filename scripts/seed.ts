@@ -83,7 +83,12 @@ async function seedDishes() {
     if (photo && photo.startsWith("/images/")) {
       photo = await uploadAsset(photo);
     }
-    rows.push({ ...d, photo_url: photo });
+    const extras: string[] = [];
+    for (const p of d.photo_urls ?? []) {
+      const url = p.startsWith("/images/") ? await uploadAsset(p) : p;
+      if (url) extras.push(url);
+    }
+    rows.push({ ...d, photo_url: photo, photo_urls: extras });
   }
   const { error } = await supabase.from("dishes").upsert(rows);
   if (error) throw error;

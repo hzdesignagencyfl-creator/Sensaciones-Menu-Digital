@@ -18,6 +18,7 @@ create table if not exists public.dishes (
   ingredients_en  text[] default '{}',
   ingredients_es  text[] default '{}',
   photo_url       text,
+  photo_urls      text[] not null default '{}',
   video_url       text,
   status          text default 'visible',
   available_today boolean default true,
