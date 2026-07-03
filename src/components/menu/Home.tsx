@@ -13,7 +13,6 @@ const CATEGORY_CHIPS = CATEGORIES.filter((c) => c.id !== "popular");
 const HOME_SECTIONS: CategoryId[] = [
   "breakfast",
   "appetizers",
-  "sandwiches",
   "entrees",
   "desserts",
   "drinks",
@@ -68,8 +67,8 @@ export function Home({
     () => dishes.filter((d) => d.badge_popular).sort(bySort).slice(0, 4),
     [dishes],
   );
-  const fresh = useMemo(
-    () => dishes.filter((d) => d.badge_new).sort(bySort).slice(0, 4),
+  const chefPicks = useMemo(
+    () => dishes.filter((d) => d.badge_chef).sort(bySort).slice(0, 4),
     [dishes],
   );
 
@@ -209,9 +208,9 @@ export function Home({
             <DishGrid dishes={popular} lang={lang} onOpen={onOpenDish} />
           </Section>
 
-          {fresh.length > 0 && (
-            <Section title={t.newSection}>
-              <DishGrid dishes={fresh} lang={lang} onOpen={onOpenDish} />
+          {chefPicks.length > 0 && (
+            <Section title={t.chefSection}>
+              <DishGrid dishes={chefPicks} lang={lang} onOpen={onOpenDish} />
             </Section>
           )}
 
