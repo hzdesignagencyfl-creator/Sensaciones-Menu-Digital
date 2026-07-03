@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { SpecialBanner } from "@/components/menu/SpecialBanner";
+import { compressImage } from "@/lib/image";
+import { safeStorageName } from "@/lib/slug";
 import type { Special } from "@/lib/types";
 import { Segmented, Toggle, ui } from "../ui";
 
@@ -23,15 +25,16 @@ export function SpecialSection({
     setSaved(false);
   }
 
-  async function upload(file: File) {
+  async function upload(rawFile: File) {
     const supabase = getSupabaseBrowser();
     if (!supabase) {
-      set("photo_url", URL.createObjectURL(file));
+      set("photo_url", URL.createObjectURL(rawFile));
       return;
     }
     setUploading(true);
     try {
-      const path = `special-${Date.now()}-${file.name}`;
+      const file = await compressImage(rawFile);
+      const path = `special-${Date.now()}-${safeStorageName(file.name)}`;
       const { error } = await supabase.storage.from("dish-photos").upload(path, file, { upsert: true });
       if (error) throw error;
       set("photo_url", supabase.storage.from("dish-photos").getPublicUrl(path).data.publicUrl);

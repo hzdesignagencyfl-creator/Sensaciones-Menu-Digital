@@ -25,8 +25,10 @@ export function AvailabilitySection({
     [dishes, q],
   );
 
-  const available = list.filter((d) => d.available_today).length;
-  const off = list.length - available;
+  // Header counts reflect the whole menu, not the current search filter.
+  const visibleDishes = dishes.filter((d) => d.status === "visible");
+  const available = visibleDishes.filter((d) => d.available_today).length;
+  const off = visibleDishes.length - available;
 
   return (
     <div style={{ padding: "28px 32px 40px", animation: "fadeUp 0.25s ease" }}>

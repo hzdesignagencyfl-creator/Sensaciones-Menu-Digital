@@ -8,7 +8,7 @@ import {
   trackLangSet,
   trackMenuOpen,
 } from "@/lib/analytics";
-import { CATEGORIES, STR, categoryLabel } from "@/lib/data/menu-meta";
+import { STR, categoryLabel } from "@/lib/data/menu-meta";
 import type { MenuData } from "@/lib/data-service";
 import type { CategoryId, Dish, Lang, Special } from "@/lib/types";
 import { Hero } from "./Hero";
@@ -19,6 +19,8 @@ import { DishModal } from "./DishModal";
 import { MediaLightbox } from "./MediaLightbox";
 import { ReviewCTA } from "./ReviewCTA";
 import { ScrollTopButton } from "./ScrollTopButton";
+
+const LANG_KEY = "sensaciones_lang";
 
 export function MenuApp({ initial }: { initial: MenuData }) {
   const [lang, setLang] = useState<Lang>(initial.settings.default_lang);
@@ -39,6 +41,21 @@ export function MenuApp({ initial }: { initial: MenuData }) {
     trackMenuOpen();
   }, []);
 
+  // Restore the visitor's last language choice. Can't happen in the useState
+  // initializer: the server renders with the default and localStorage differing
+  // from it would break hydration.
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(LANG_KEY);
+      if (stored === "en" || stored === "es") {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setLang(stored);
+      }
+    } catch {
+      // storage blocked (private mode) — keep the default language
+    }
+  }, []);
+
   // Realtime: reflect admin availability / special edits instantly.
   useEffect(() => {
     const supabase = getSupabaseBrowser();
@@ -49,7 +66,12 @@ export function MenuApp({ initial }: { initial: MenuData }) {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "dishes" },
-        (payload: { new: Dish }) => {
+        (payload: { eventType: string; new: Partial<Dish>; old: Partial<Dish> }) => {
+          if (payload.eventType === "DELETE") {
+            const oldId = payload.old?.id;
+            if (oldId) setDishes((prev) => prev.filter((d) => d.id !== oldId));
+            return;
+          }
           const row = payload.new as Dish;
           if (!row?.id) return;
           setDishes((prev) => {
@@ -64,7 +86,10 @@ export function MenuApp({ initial }: { initial: MenuData }) {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "special" },
-        (payload: { new: Special }) => setSpecial(payload.new as Special),
+        (payload: { new: Partial<Special> }) => {
+          const row = payload.new as Special;
+          if (row?.id) setSpecial(row);
+        },
       )
       .subscribe();
 
@@ -76,6 +101,11 @@ export function MenuApp({ initial }: { initial: MenuData }) {
   function changeLang(l: Lang) {
     if (l === lang) return;
     setLang(l);
+    try {
+      window.localStorage.setItem(LANG_KEY, l);
+    } catch {
+      // storage blocked — the choice just won't survive a reload
+    }
     trackLangSet(l);
   }
 
@@ -157,7 +187,13 @@ export function MenuApp({ initial }: { initial: MenuData }) {
 
       <ScrollTopButton onClick={() => scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" })} />
       <ReviewCTA lang={lang} href={initial.settings.google_review_url} />
-      <DishModal dish={modalDish} lang={lang} onClose={() => setModalDish(null)} onOpenMedia={openMedia} />
+      <DishModal
+        dish={modalDish}
+        lang={lang}
+        suspended={Boolean(lightbox)}
+        onClose={() => setModalDish(null)}
+        onOpenMedia={openMedia}
+      />
       {lightbox && (
         <MediaLightbox
           key={lightbox.source.id}

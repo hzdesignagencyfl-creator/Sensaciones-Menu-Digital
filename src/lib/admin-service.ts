@@ -59,6 +59,21 @@ export async function deleteDish(id: string): Promise<void> {
   if (error) throw error;
 }
 
+/** Persists new sort_order values after reordering dishes in the admin. */
+export async function saveSortOrders(
+  updates: { id: string; sort_order: number }[],
+): Promise<void> {
+  const supabase = getSupabaseBrowser();
+  if (!supabase || updates.length === 0) return;
+  const results = await Promise.all(
+    updates.map((u) =>
+      supabase.from("dishes").update({ sort_order: u.sort_order }).eq("id", u.id),
+    ),
+  );
+  const failed = results.find((r) => r.error);
+  if (failed?.error) throw failed.error;
+}
+
 export async function setAvailability(id: string, available: boolean): Promise<void> {
   const supabase = getSupabaseBrowser();
   if (!supabase) return;

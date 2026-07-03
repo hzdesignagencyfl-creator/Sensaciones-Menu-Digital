@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { CATEGORIES } from "@/lib/data/menu-meta";
+import { formatAmount } from "@/lib/format";
 import type { CategoryId, Dish } from "@/lib/types";
 import { Thumb } from "../Thumb";
 import { Toggle, ui } from "../ui";
@@ -15,6 +16,8 @@ export function MenuSection({
   onAddNew,
   onToggleAvailability,
   onDelete,
+  onMove,
+  onDuplicate,
 }: {
   dishes: Dish[];
   source: "supabase" | "local";
@@ -22,6 +25,8 @@ export function MenuSection({
   onAddNew: () => void;
   onToggleAvailability: (id: string, available: boolean) => void;
   onDelete: (id: string) => void;
+  onMove: (id: string, dir: -1 | 1) => void;
+  onDuplicate: (d: Dish) => void;
 }) {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState<Record<string, boolean>>({ breakfast: true });
@@ -107,10 +112,16 @@ export function MenuSection({
 
               {isOpen && (
                 <div style={{ borderTop: "1px solid var(--border-subtle)" }}>
-                  {list.map((d) => (
+                  {list.map((d, i) => (
                     <DishRow
                       key={d.id}
                       dish={d}
+                      // While searching the list is filtered, so neighbor
+                      // positions are misleading — disable reordering.
+                      canMoveUp={!q && i > 0}
+                      canMoveDown={!q && i < list.length - 1}
+                      onMove={(dir) => onMove(d.id, dir)}
+                      onDuplicate={() => onDuplicate(d)}
                       onEdit={() => onEdit(d)}
                       onToggle={(v) => onToggleAvailability(d.id, v)}
                       onDelete={() => {
@@ -133,11 +144,19 @@ export function MenuSection({
 
 function DishRow({
   dish,
+  canMoveUp,
+  canMoveDown,
+  onMove,
+  onDuplicate,
   onEdit,
   onToggle,
   onDelete,
 }: {
   dish: Dish;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onMove: (dir: -1 | 1) => void;
+  onDuplicate: () => void;
   onEdit: () => void;
   onToggle: (v: boolean) => void;
   onDelete: () => void;
@@ -145,6 +164,28 @@ function DishRow({
   const active = dish.status === "visible";
   return (
     <div style={{ display: "flex", alignItems: "center", gap: "14px", padding: "12px 18px", borderTop: "1px solid var(--border-subtle)" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "2px", flex: "0 0 auto" }}>
+        <button
+          onClick={() => onMove(-1)}
+          disabled={!canMoveUp}
+          title="Move up"
+          style={{ ...moveBtn, opacity: canMoveUp ? 1 : 0.25, cursor: canMoveUp ? "pointer" : "default" }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6B6560" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m18 15-6-6-6 6" />
+          </svg>
+        </button>
+        <button
+          onClick={() => onMove(1)}
+          disabled={!canMoveDown}
+          title="Move down"
+          style={{ ...moveBtn, opacity: canMoveDown ? 1 : 0.25, cursor: canMoveDown ? "pointer" : "default" }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6B6560" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
+      </div>
       <Thumb src={dish.photo_url} alt={dish.name_en} />
       <div style={{ minWidth: 0, flex: 1 }}>
         <div style={{ fontSize: "14.5px", fontWeight: 600, color: "var(--charcoal)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -153,7 +194,7 @@ function DishRow({
         <div style={{ fontSize: "12px", color: "var(--body-text)" }}>{dish.name_es}</div>
       </div>
       <div style={{ width: "96px", fontSize: "14px", fontWeight: 600, color: "var(--gold-primary)", flex: "0 0 auto" }}>
-        {dish.market_price || dish.price == null ? "MKP" : "$" + dish.price}
+        {dish.market_price || dish.price == null ? "MKP" : "$" + formatAmount(dish.price)}
       </div>
       <span
         style={{
@@ -175,6 +216,12 @@ function DishRow({
           <path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z" />
         </svg>
       </button>
+      <button onClick={onDuplicate} title="Duplicate" style={iconBtn}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B6560" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="9" y="9" width="13" height="13" rx="2" />
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </svg>
+      </button>
       <button onClick={onDelete} title="Delete" style={{ ...iconBtn, background: "var(--error-bg)" }}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C0524A" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="3 6 5 6 21 6" />
@@ -184,6 +231,18 @@ function DishRow({
     </div>
   );
 }
+
+const moveBtn: React.CSSProperties = {
+  width: "22px",
+  height: "18px",
+  border: "1px solid var(--border)",
+  borderRadius: "5px",
+  background: "var(--cream)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  padding: 0,
+};
 
 const iconBtn: React.CSSProperties = {
   flex: "0 0 auto",

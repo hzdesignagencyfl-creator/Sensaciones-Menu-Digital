@@ -22,7 +22,15 @@ export function DishCard({
   const [descOpen, setDescOpen] = useState(false);
   const [ingOpen, setIngOpen] = useState(false);
   const [videoOpen, setVideoOpen] = useState(false);
+  // Mount the <video> only after the panel is first revealed so cards don't
+  // download/play every clip on page load.
+  const [videoLoaded, setVideoLoaded] = useState(false);
   const touchX = useRef(0);
+
+  function openVideo() {
+    setVideoLoaded(true);
+    setVideoOpen(true);
+  }
 
   const name = dishName(dish, lang);
   const desc = dishDesc(dish, lang);
@@ -36,8 +44,9 @@ export function DishCard({
   }
   function onTouchEnd(e: React.TouchEvent) {
     const dx = (e.changedTouches[0]?.clientX ?? 0) - touchX.current;
-    if (dx > 50 && !videoOpen && hasVideo) setVideoOpen(true);
-    if (dx < -50 && videoOpen) setVideoOpen(false);
+    // The video panel sits to the right: swipe left reveals it, right closes it.
+    if (dx < -50 && !videoOpen && hasVideo) openVideo();
+    if (dx > 50 && videoOpen) setVideoOpen(false);
   }
 
   return (
@@ -96,7 +105,7 @@ export function DishCard({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    setVideoOpen(true);
+                    openVideo();
                   }}
                   aria-label="Play video"
                   style={{
@@ -180,7 +189,7 @@ export function DishCard({
             }}
             onClick={() => dish.video_url && onOpenMedia(dish, 1)}
           >
-            {dish.video_url ? (
+            {dish.video_url && videoLoaded ? (
               <video
                 src={dish.video_url}
                 autoPlay

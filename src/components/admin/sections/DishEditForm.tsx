@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { CATEGORIES } from "@/lib/data/menu-meta";
+import { compressImage } from "@/lib/image";
+import { safeStorageName, slugify, uniqueId } from "@/lib/slug";
 import type { BadgeId, CategoryId, Dish } from "@/lib/types";
 import { Segmented, Toggle, ui } from "../ui";
 
@@ -15,16 +17,7 @@ const BADGE_FIELDS: { key: keyof Dish; id: BadgeId; label: string }[] = [
   { key: "badge_gf", id: "gf", label: "Gluten-free" },
 ];
 
-function slugify(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
-function blankDish(): Dish {
+function blankDish(sortOrder: number): Dish {
   return {
     id: "",
     category: "entrees",
@@ -46,25 +39,28 @@ function blankDish(): Dish {
     badge_veg: false,
     badge_gf: false,
     star_rating: 0,
-    sort_order: 999,
+    sort_order: sortOrder,
   };
 }
 
 export function DishEditForm({
   dish,
   existingIds,
+  nextSortOrder,
   onCancel,
   onSave,
   onDelete,
 }: {
   dish: Dish | null;
   existingIds: string[];
+  /** sort_order assigned to a newly created dish (max existing + 1). */
+  nextSortOrder: number;
   onCancel: () => void;
   onSave: (d: Dish) => void;
   onDelete: (id: string) => void;
 }) {
   const isNew = !dish;
-  const [form, setForm] = useState<Dish>(dish ? { ...dish } : blankDish());
+  const [form, setForm] = useState<Dish>(dish ? { ...dish } : blankDish(nextSortOrder));
   const [uploading, setUploading] = useState(false);
 
   function set<K extends keyof Dish>(key: K, value: Dish[K]) {
@@ -78,26 +74,24 @@ export function DishEditForm({
     }
     let id = form.id;
     if (isNew) {
-      id = slugify(form.name_en) || `dish-${Date.now()}`;
-      let unique = id;
-      let n = 2;
-      while (existingIds.includes(unique)) unique = `${id}-${n++}`;
-      id = unique;
+      id = uniqueId(slugify(form.name_en), existingIds);
     }
     onSave({ ...form, id });
   }
 
-  async function uploadFile(file: File, field: "photo_url" | "video_url") {
+  async function uploadFile(rawFile: File, field: "photo_url" | "video_url") {
     const supabase = getSupabaseBrowser();
     if (!supabase) {
       // Preview mode — show a local object URL (won't persist).
-      set(field, URL.createObjectURL(file));
+      set(field, URL.createObjectURL(rawFile));
       return;
     }
     setUploading(true);
     try {
+      // Photos get resized/re-encoded client-side; videos upload as-is.
+      const file = field === "photo_url" ? await compressImage(rawFile) : rawFile;
       const bucket = field === "photo_url" ? "dish-photos" : "dish-videos";
-      const path = `${slugify(form.name_en) || "dish"}-${Date.now()}-${file.name}`;
+      const path = `${slugify(form.name_en) || "dish"}-${Date.now()}-${safeStorageName(file.name)}`;
       const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
       if (error) throw error;
       const { data } = supabase.storage.from(bucket).getPublicUrl(path);

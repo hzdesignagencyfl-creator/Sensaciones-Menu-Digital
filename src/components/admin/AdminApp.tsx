@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import {
   type AdminBundle,
@@ -8,9 +8,11 @@ import {
   loadAdminBundle,
   saveDish,
   saveSettings,
+  saveSortOrders,
   saveSpecial,
   setAvailability,
 } from "@/lib/admin-service";
+import { uniqueId } from "@/lib/slug";
 import type { Dish, Settings, Special } from "@/lib/types";
 import { Login } from "./Login";
 import { Sidebar, type AdminSection } from "./Sidebar";
@@ -36,6 +38,8 @@ export function AdminApp() {
       // optional `&section=insights` opens a specific section.
       const params = new URLSearchParams(window.location.search);
       if (params.get("demo") === "1") {
+        // One-time sync from the URL on mount — safe despite the lint rule.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSignedIn(true);
         const s = params.get("section");
         if (s && ["menu", "special", "availability", "insights", "settings"].includes(s)) {
@@ -49,13 +53,16 @@ export function AdminApp() {
     });
   }, []);
 
-  const refresh = useCallback(async () => {
-    setBundle(await loadAdminBundle());
-  }, []);
-
   useEffect(() => {
-    if (signedIn) void refresh();
-  }, [signedIn, refresh]);
+    if (!signedIn) return;
+    let cancelled = false;
+    void loadAdminBundle().then((b) => {
+      if (!cancelled) setBundle(b);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [signedIn]);
 
   async function signOut() {
     const supabase = getSupabaseBrowser();
@@ -97,6 +104,73 @@ export function AdminApp() {
       await deleteDish(id);
     } catch (e) {
       console.error(e);
+    }
+  }
+
+  /** Moves a dish one position up/down within its category. */
+  async function handleMoveDish(id: string, dir: -1 | 1) {
+    if (!bundle) return;
+    const dish = bundle.dishes.find((d) => d.id === id);
+    if (!dish) return;
+
+    const catList = bundle.dishes
+      .filter((d) => d.category === dish.category)
+      .sort((a, b) => a.sort_order - b.sort_order);
+    const idx = catList.findIndex((d) => d.id === id);
+    const target = idx + dir;
+    if (target < 0 || target >= catList.length) return;
+
+    // The category's sort_order values, made strictly increasing so swaps
+    // always take effect even if old rows share a value (legacy 999s).
+    const values = catList.map((d) => d.sort_order);
+    for (let i = 1; i < values.length; i++) {
+      if (values[i] <= values[i - 1]) values[i] = values[i - 1] + 1;
+    }
+
+    const reordered = [...catList];
+    [reordered[idx], reordered[target]] = [reordered[target], reordered[idx]];
+
+    const updates: { id: string; sort_order: number }[] = [];
+    reordered.forEach((d, i) => {
+      if (d.sort_order !== values[i]) updates.push({ id: d.id, sort_order: values[i] });
+    });
+    if (updates.length === 0) return;
+
+    const byId = new Map(updates.map((u) => [u.id, u.sort_order]));
+    setBundle((b) =>
+      b
+        ? {
+            ...b,
+            dishes: b.dishes.map((d) =>
+              byId.has(d.id) ? { ...d, sort_order: byId.get(d.id)! } : d,
+            ),
+          }
+        : b,
+    );
+    try {
+      await saveSortOrders(updates);
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  /** Clones a dish (new id, "(Copy)" names) and opens it in the editor. */
+  async function handleDuplicateDish(dish: Dish) {
+    if (!bundle) return;
+    const copy: Dish = {
+      ...dish,
+      id: uniqueId(`${dish.id}-copy`, bundle.dishes.map((d) => d.id)),
+      name_en: `${dish.name_en} (Copy)`,
+      name_es: dish.name_es ? `${dish.name_es} (Copia)` : "",
+      sort_order: Math.max(0, ...bundle.dishes.map((d) => d.sort_order)) + 1,
+    };
+    patchDishLocal(copy);
+    setEditing(copy);
+    try {
+      await saveDish(copy);
+    } catch (e) {
+      console.error(e);
+      alert("Could not save to the database. Check your Supabase connection.");
     }
   }
 
@@ -172,6 +246,7 @@ export function AdminApp() {
                     <DishEditForm
                       dish={editing}
                       existingIds={bundle.dishes.map((d) => d.id)}
+                      nextSortOrder={Math.max(0, ...bundle.dishes.map((d) => d.sort_order)) + 1}
                       onCancel={() => {
                         setEditing(null);
                         setCreating(false);
@@ -187,6 +262,8 @@ export function AdminApp() {
                       onAddNew={() => setCreating(true)}
                       onToggleAvailability={handleToggleAvailability}
                       onDelete={handleDeleteDish}
+                      onMove={handleMoveDish}
+                      onDuplicate={handleDuplicateDish}
                     />
                   )
                 ) : section === "special" ? (

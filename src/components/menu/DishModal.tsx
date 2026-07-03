@@ -10,21 +10,24 @@ import { DishPhoto } from "./DishPhoto";
 export function DishModal({
   dish,
   lang,
+  suspended = false,
   onClose,
   onOpenMedia,
 }: {
   dish: Dish | null;
   lang: Lang;
+  /** True while another overlay (lightbox) sits on top — Escape should close that one, not this. */
+  suspended?: boolean;
   onClose: () => void;
   onOpenMedia: (dish: Dish, index: number) => void;
 }) {
-  // Close on Escape + lock body scroll while open.
+  // Close on Escape.
   useEffect(() => {
-    if (!dish) return;
+    if (!dish || suspended) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [dish, onClose]);
+  }, [dish, suspended, onClose]);
 
   if (!dish) return null;
   const t = STR[lang];
@@ -53,6 +56,7 @@ export function DishModal({
           width: "100%",
           maxHeight: "90%",
           overflowY: "auto",
+          overscrollBehavior: "contain",
           background: "var(--cream)",
           borderRadius: "26px 26px 0 0",
           animation: "sheetUp 0.32s cubic-bezier(0.2,0.9,0.2,1)",

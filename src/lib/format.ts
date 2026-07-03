@@ -7,7 +7,12 @@ export function formatPrice(
   lang: Lang,
 ): string {
   if (item.market_price || item.price == null) return STR[lang].marketPrice;
-  return "$" + item.price;
+  return "$" + formatAmount(item.price);
+}
+
+/** "14" stays "$14", "14.5" renders as "14.50". */
+export function formatAmount(price: number): string {
+  return Number.isInteger(price) ? String(price) : price.toFixed(2);
 }
 
 export function dishName(dish: Dish, lang: Lang): string {
