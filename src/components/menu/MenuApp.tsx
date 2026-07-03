@@ -17,6 +17,7 @@ import { Cover } from "./Cover";
 import { DishDetail } from "./DishDetail";
 import { Home } from "./Home";
 import { MediaLightbox } from "./MediaLightbox";
+import { SpecialDetail } from "./SpecialDetail";
 
 const LANG_KEY = "sensaciones_lang";
 const COVER_KEY = "sensaciones_cover_seen";
@@ -27,7 +28,8 @@ type View =
   | { screen: "home" }
   | { screen: "categories" }
   | { screen: "category"; cat: CategoryId }
-  | { screen: "detail"; dishId: string };
+  | { screen: "detail"; dishId: string }
+  | { screen: "special" };
 
 export function MenuApp({ initial }: { initial: MenuData }) {
   const [lang, setLang] = useState<Lang>(initial.settings.default_lang);
@@ -175,9 +177,8 @@ export function MenuApp({ initial }: { initial: MenuData }) {
     setLightbox({ source: d, index });
   }
 
-  function openSpecialMedia(s: Special) {
-    if (!s.photo_url) return;
-    setLightbox({ source: s, index: 0 });
+  function openSpecial(s: Special) {
+    navigate({ screen: "special" });
     trackDishTap(`special-${s.id}`, "special");
   }
 
@@ -189,9 +190,13 @@ export function MenuApp({ initial }: { initial: MenuData }) {
   // Detail dish is derived from live state so realtime edits show instantly.
   const detailDish =
     view.screen === "detail" ? visible.find((d) => d.id === view.dishId) : undefined;
+  // If the admin deactivates the special while someone is viewing it, fall back home.
+  const specialOpen = view.screen === "special" && special.active;
 
   const navTab: NavTab = view.screen === "categories" ? "categories" : "home";
-  const showNav = view.screen !== "detail" || !detailDish;
+  // Hidden on detail screens and while the welcome cover is up.
+  const showNav =
+    !coverOpen && !specialOpen && (view.screen !== "detail" || !detailDish);
 
   return (
     <div className="menu-shell">
@@ -204,7 +209,7 @@ export function MenuApp({ initial }: { initial: MenuData }) {
             onLang={changeLang}
             onOpenCategory={openCategory}
             onOpenDish={openDish}
-            onOpenSpecial={() => openSpecialMedia(special)}
+            onOpenSpecial={() => openSpecial(special)}
           />
         )}
         {view.screen === "categories" && (
@@ -212,6 +217,25 @@ export function MenuApp({ initial }: { initial: MenuData }) {
         )}
         {view.screen === "category" && (
           <CategoryView cat={view.cat} dishes={visible} lang={lang} onBack={goBack} onOpenDish={openDish} />
+        )}
+        {view.screen === "special" && specialOpen && (
+          <SpecialDetail
+            special={special}
+            lang={lang}
+            onBack={goBack}
+            onOpenMedia={() => setLightbox({ source: special, index: 0 })}
+          />
+        )}
+        {view.screen === "special" && !specialOpen && (
+          <Home
+            dishes={visible}
+            special={special}
+            lang={lang}
+            onLang={changeLang}
+            onOpenCategory={openCategory}
+            onOpenDish={openDish}
+            onOpenSpecial={() => openSpecial(special)}
+          />
         )}
         {view.screen === "detail" &&
           (detailDish ? (
@@ -225,7 +249,7 @@ export function MenuApp({ initial }: { initial: MenuData }) {
               onLang={changeLang}
               onOpenCategory={openCategory}
               onOpenDish={openDish}
-              onOpenSpecial={() => openSpecialMedia(special)}
+              onOpenSpecial={() => openSpecial(special)}
             />
           ))}
       </div>

@@ -1,5 +1,4 @@
 import { STR } from "@/lib/data/menu-meta";
-import { formatPrice } from "@/lib/format";
 import type { Lang, Special } from "@/lib/types";
 
 export function SpecialBanner({
@@ -14,7 +13,6 @@ export function SpecialBanner({
   if (!special.active) return null;
   const t = STR[lang];
   const name = lang === "en" ? special.name_en : special.name_es;
-  const desc = lang === "en" ? special.description_en : special.description_es;
   const clickable = Boolean(special.photo_url);
 
   return (
@@ -87,34 +85,14 @@ export function SpecialBanner({
         <div
           className="font-display"
           style={{
-            fontSize: "24px",
-            fontWeight: 600,
+            fontSize: "26px",
+            fontWeight: 700,
             color: "var(--cream)",
             lineHeight: 1.1,
-            marginTop: "5px",
+            marginTop: "7px",
           }}
         >
           {name}
-        </div>
-        <div
-          style={{
-            fontSize: "12px",
-            lineHeight: 1.5,
-            color: "rgba(250,247,242,0.86)",
-            marginTop: "6px",
-          }}
-        >
-          {desc}
-        </div>
-        <div
-          style={{
-            fontSize: "17px",
-            fontWeight: 600,
-            color: "var(--gold-light)",
-            marginTop: "9px",
-          }}
-        >
-          {formatPrice(special, lang)}
         </div>
       </div>
     </div>

@@ -35,6 +35,9 @@ export const BADGES: Record<BadgeId, { en: string; es: string; bg: string; color
 export const STR = {
   en: {
     tagline: "Cuban Cuisine · Fort Myers",
+    heroTitle: "Let's Eat",
+    heroSubtitle: "Discover our authentic Cuban cuisine",
+    designedBy: "Designed by Local Brand Boosters",
     ingredients: "Ingredients",
     description: "Description",
     seeMore: "See more",
@@ -58,6 +61,9 @@ export const STR = {
   },
   es: {
     tagline: "Cocina Cubana · Fort Myers",
+    heroTitle: "¡A Comer!",
+    heroSubtitle: "Descubre nuestra auténtica cocina cubana",
+    designedBy: "Diseñado por Local Brand Boosters",
     ingredients: "Ingredientes",
     description: "Descripción",
     seeMore: "Ver más",

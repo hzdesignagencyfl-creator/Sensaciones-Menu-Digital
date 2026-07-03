@@ -5,7 +5,8 @@ import { HERO_IMAGES, STR } from "@/lib/data/menu-meta";
 import type { Lang } from "@/lib/types";
 import { LangToggle } from "./LangToggle";
 
-/** Full-screen welcome cover (shown once per session), per reference design. */
+/** Full-screen welcome cover (shown once per session), per reference design.
+ *  Renders above all menu chrome (bottom nav etc.) via a high z-index. */
 export function Cover({
   lang,
   onLang,
@@ -28,6 +29,7 @@ export function Cover({
       style={{
         position: "absolute",
         inset: 0,
+        zIndex: 70,
         background: "#0d0d0d",
         display: "flex",
         flexDirection: "column",
@@ -56,12 +58,12 @@ export function Cover({
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(180deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.35) 40%, rgba(10,10,10,0.88) 100%)",
+              "linear-gradient(180deg, rgba(10,10,10,0.60) 0%, rgba(10,10,10,0.32) 42%, rgba(10,10,10,0.90) 100%)",
           }}
         />
       </div>
 
-      {/* Content */}
+      {/* Content — everything centered */}
       <div
         style={{
           position: "relative",
@@ -69,67 +71,95 @@ export function Cover({
           flex: 1,
           display: "flex",
           flexDirection: "column",
-          padding: "22px 24px 42px",
+          alignItems: "center",
+          textAlign: "center",
+          padding: "0 26px 30px",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "7px",
-              color: "rgba(250,247,242,0.92)",
-              fontSize: "12px",
-              fontWeight: 600,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-            }}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="var(--gold-primary)">
-              <polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18 5.5 22 7 14.5 2 9.5 9 9" />
-            </svg>
-            {t.tagline}
-          </span>
-          <LangToggle lang={lang} onLang={onLang} onDark />
-        </div>
-
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {/* Logo near the top (not glued), with the language toggle below it */}
+        <div style={{ marginTop: "54px", display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/images/logo/logo-on-dark.png"
             alt="Sensaciones"
-            style={{ width: "230px", maxWidth: "70%", height: "auto", display: "block" }}
+            style={{ height: "58px", width: "auto", display: "block" }}
           />
+          <LangToggle lang={lang} onLang={onLang} onDark />
         </div>
 
-        <button
-          onClick={onEnter}
-          className="font-body"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "10px",
-            width: "100%",
-            maxWidth: "320px",
-            margin: "0 auto",
-            padding: "16px 20px",
-            border: "none",
-            borderRadius: "14px",
-            background: "var(--gold-primary)",
-            color: "var(--teal-dark)",
-            fontSize: "15.5px",
-            fontWeight: 700,
-            letterSpacing: "0.02em",
-            cursor: "pointer",
-            boxShadow: "0 10px 30px rgba(0,0,0,0.45)",
-          }}
-        >
-          {t.viewMenu}
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M5 12h14M13 6l6 6-6 6" />
-          </svg>
-        </button>
+        {/* Spacer pushes the hero group down into the lower third */}
+        <div style={{ flex: 1 }} />
+
+        {/* Hero copy + button, anchored toward the bottom */}
+        <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <h1
+            className="font-display"
+            style={{
+              margin: 0,
+              color: "var(--cream)",
+              fontSize: "52px",
+              fontWeight: 700,
+              lineHeight: 1.02,
+              letterSpacing: "0.02em",
+              textTransform: "uppercase",
+              textShadow: "0 2px 20px rgba(0,0,0,0.45)",
+            }}
+          >
+            {t.heroTitle}
+          </h1>
+          <p
+            style={{
+              margin: "12px auto 0",
+              maxWidth: "88%",
+              color: "rgba(250,247,242,0.86)",
+              fontSize: "14.5px",
+              fontWeight: 500,
+              lineHeight: 1.5,
+              textShadow: "0 1px 12px rgba(0,0,0,0.5)",
+            }}
+          >
+            {t.heroSubtitle}
+          </p>
+
+          <button
+            onClick={onEnter}
+            className="font-body"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "10px",
+              width: "100%",
+              marginTop: "30px",
+              padding: "16px 20px",
+              border: "none",
+              borderRadius: "14px",
+              background: "var(--gold-primary)",
+              color: "var(--teal-dark)",
+              fontSize: "15.5px",
+              fontWeight: 700,
+              letterSpacing: "0.02em",
+              cursor: "pointer",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.45)",
+            }}
+          >
+            {t.viewMenu}
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </button>
+          <div
+            style={{
+              marginTop: "14px",
+              fontSize: "10.5px",
+              fontWeight: 500,
+              letterSpacing: "0.04em",
+              color: "rgba(250,247,242,0.5)",
+            }}
+          >
+            {t.designedBy}
+          </div>
+        </div>
       </div>
     </div>
   );
