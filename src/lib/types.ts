@@ -54,6 +54,8 @@ export interface Special {
   description_es: string;
   price: number | null;
   photo_url: string | null;
+  /** Looping banner video (may be undefined before the DB migration runs). */
+  video_url?: string | null;
 }
 
 export interface Settings {

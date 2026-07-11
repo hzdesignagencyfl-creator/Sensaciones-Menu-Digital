@@ -25,23 +25,28 @@ export function SpecialSection({
     setSaved(false);
   }
 
-  async function upload(rawFile: File) {
-    if (rawFile.size > 15 * 1024 * 1024) {
-      alert("File is too large (max 15 MB for photos).");
+  async function upload(rawFile: File, kind: "image" | "video") {
+    // Every menu visitor downloads these — refuse unreasonable sizes up front.
+    const maxMb = kind === "image" ? 15 : 60;
+    if (rawFile.size > maxMb * 1024 * 1024) {
+      alert(`File is too large (max ${maxMb} MB for ${kind === "image" ? "photos" : "videos"}).`);
       return;
     }
+    const field = kind === "image" ? "photo_url" : "video_url";
     const supabase = getSupabaseBrowser();
     if (!supabase) {
-      set("photo_url", URL.createObjectURL(rawFile));
+      set(field, URL.createObjectURL(rawFile));
       return;
     }
     setUploading(true);
     try {
-      const file = await compressImage(rawFile);
+      // Photos get resized/re-encoded client-side; videos upload as-is.
+      const file = kind === "image" ? await compressImage(rawFile) : rawFile;
+      const bucket = kind === "image" ? "dish-photos" : "dish-videos";
       const path = `special-${Date.now()}-${safeStorageName(file.name)}`;
-      const { error } = await supabase.storage.from("dish-photos").upload(path, file, { upsert: true });
+      const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
       if (error) throw error;
-      set("photo_url", supabase.storage.from("dish-photos").getPublicUrl(path).data.publicUrl);
+      set(field, supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl);
     } catch (e) {
       console.error(e);
       alert("Upload failed. Make sure the storage bucket exists (see SETUP.md).");
@@ -130,15 +135,29 @@ export function SpecialSection({
                 </button>
               </div>
             ) : (
-              <label style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "6px", height: "90px", border: "2px dashed #CFC9C1", borderRadius: "10px", cursor: "pointer", color: "var(--body-text)", fontSize: "12.5px" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9C968E" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="17 8 12 3 7 8" />
-                  <line x1="12" y1="3" x2="12" y2="15" />
-                </svg>
-                {uploading ? "Uploading…" : "Upload banner photo"}
-                <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); }} />
-              </label>
+              <UploadBox
+                label={uploading ? "Uploading…" : "Upload banner photo"}
+                accept="image/*"
+                onPick={(f) => upload(f, "image")}
+              />
+            )}
+          </div>
+
+          <div style={{ ...ui.card, padding: "16px 18px" }}>
+            <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--charcoal)", marginBottom: "12px" }}>Banner video (optional, looping)</div>
+            {form.video_url ? (
+              <div>
+                <video src={form.video_url} muted loop autoPlay playsInline style={{ width: "100%", height: "118px", objectFit: "cover", borderRadius: "10px", background: "#000" }} />
+                <button onClick={() => set("video_url", null)} style={{ background: "none", border: "none", color: "var(--error)", fontSize: "12.5px", fontWeight: 600, cursor: "pointer", marginTop: "8px", padding: 0 }}>
+                  Remove
+                </button>
+              </div>
+            ) : (
+              <UploadBox
+                label={uploading ? "Uploading…" : "Upload banner video"}
+                accept="video/*"
+                onPick={(f) => upload(f, "video")}
+              />
             )}
           </div>
         </div>
@@ -153,5 +172,36 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <label style={ui.label}>{label}</label>
       {children}
     </div>
+  );
+}
+
+function UploadBox({
+  label,
+  accept,
+  onPick,
+}: {
+  label: string;
+  accept: string;
+  onPick: (f: File) => void;
+}) {
+  return (
+    <label style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "6px", height: "90px", border: "2px dashed #CFC9C1", borderRadius: "10px", cursor: "pointer", color: "var(--body-text)", fontSize: "12.5px" }}>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9C968E" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="17 8 12 3 7 8" />
+        <line x1="12" y1="3" x2="12" y2="15" />
+      </svg>
+      {label}
+      <input
+        type="file"
+        accept={accept}
+        style={{ display: "none" }}
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onPick(f);
+          e.target.value = "";
+        }}
+      />
+    </label>
   );
 }

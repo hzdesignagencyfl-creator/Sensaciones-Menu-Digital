@@ -99,7 +99,18 @@ export async function saveSpecial(special: Special): Promise<void> {
   const supabase = getSupabaseBrowser();
   if (!supabase) return;
   const { error } = await supabase.from("special").upsert({ ...special, id: 1 });
-  if (error) throw error;
+  if (error) {
+    // Databases created before the banner-video migration lack video_url —
+    // retry without it so special edits keep working until the SQL is applied.
+    if (/video_url/.test(error.message)) {
+      const { video_url: _omit, ...legacy } = special;
+      void _omit;
+      const retry = await supabase.from("special").upsert({ ...legacy, id: 1 });
+      if (retry.error) throw retry.error;
+      return;
+    }
+    throw error;
+  }
 }
 
 export async function saveSettings(settings: Settings): Promise<void> {

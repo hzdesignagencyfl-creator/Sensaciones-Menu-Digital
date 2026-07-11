@@ -12,8 +12,8 @@ export function SpecialBanner({
 }) {
   if (!special.active) return null;
   const t = STR[lang];
-  const name = lang === "en" ? special.name_en : special.name_es;
-  const clickable = Boolean(special.photo_url);
+  const name = lang === "en" ? special.name_en : special.name_es || special.name_en;
+  const clickable = Boolean(special.photo_url || special.video_url);
 
   return (
     <div
@@ -28,7 +28,27 @@ export function SpecialBanner({
         cursor: clickable ? "pointer" : "default",
       }}
     >
-      {special.photo_url && (
+      {special.video_url ? (
+        // Muted looping background video; the photo doubles as the poster
+        // so slow connections still show something while it buffers.
+        <video
+          src={special.video_url}
+          poster={special.photo_url ?? undefined}
+          muted
+          loop
+          autoPlay
+          playsInline
+          preload="metadata"
+          aria-label={name}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+          }}
+        />
+      ) : special.photo_url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={special.photo_url}
@@ -41,7 +61,7 @@ export function SpecialBanner({
             objectFit: "cover",
           }}
         />
-      )}
+      ) : null}
       <div
         style={{
           position: "absolute",

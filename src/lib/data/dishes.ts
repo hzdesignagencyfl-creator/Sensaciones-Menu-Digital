@@ -201,4 +201,5 @@ export const DEFAULT_SPECIAL: Special = {
   description_es: "Solo sábados — arroz con azafrán, camarones, mejillones y calamares.",
   price: 34,
   photo_url: "/images/food/arroz-marinero-sensaciones-fort-myers.webp",
+  video_url: null,
 };

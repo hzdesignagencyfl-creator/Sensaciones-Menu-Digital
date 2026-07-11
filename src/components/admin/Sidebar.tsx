@@ -75,6 +75,9 @@ export function Sidebar({
   onSelect: (s: AdminSection) => void;
   onSignOut: () => void;
 }) {
+  // Both states define the exact same style properties (no shorthand/longhand
+  // mixing across rerenders) or React logs a conflicting-style warning when
+  // the active item changes. The transparent border keeps the text aligned.
   const itemBase: CSSProperties = {
     display: "flex",
     alignItems: "center",
@@ -82,9 +85,12 @@ export function Sidebar({
     width: "100%",
     textAlign: "left",
     background: "none",
-    border: "none",
+    borderTop: "none",
+    borderRight: "none",
+    borderBottom: "none",
+    borderLeft: "3px solid transparent",
     borderRadius: "9px",
-    padding: "11px 13px",
+    padding: "11px 13px 11px 10px",
     fontSize: "14px",
     fontWeight: 500,
     color: "rgba(250,247,242,0.72)",
@@ -96,7 +102,6 @@ export function Sidebar({
     fontWeight: 600,
     background: "rgba(196,163,90,0.16)",
     borderLeft: "3px solid var(--gold-primary)",
-    paddingLeft: "10px",
   };
 
   return (

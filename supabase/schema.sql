@@ -42,6 +42,7 @@ create table if not exists public.special (
   description_es  text,
   price           numeric,
   photo_url       text,
+  video_url       text,
   updated_at      timestamptz default now()
 );
 

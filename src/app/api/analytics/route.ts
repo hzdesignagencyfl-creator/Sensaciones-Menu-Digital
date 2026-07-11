@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getSupabaseAdmin } from "@/lib/supabase/admin";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import type { AnalyticsEvent, AnalyticsEventType } from "@/lib/types";
 
@@ -40,7 +41,11 @@ export async function POST(request: Request) {
 
   const lang = cleanString(body.lang, 5);
 
-  const supabase = await getSupabaseServer();
+  // Prefer the service-role client: it keeps working after the migration that
+  // revokes anonymous INSERTs on analytics_events (so this validated route is
+  // the only way in). Falls back to the anon server client if the service key
+  // isn't set in this deployment.
+  const supabase = getSupabaseAdmin() ?? (await getSupabaseServer());
   // No DB yet → accept silently so the client never errors during setup.
   if (!supabase) return NextResponse.json({ ok: true, stored: false });
 

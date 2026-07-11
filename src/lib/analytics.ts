@@ -42,12 +42,12 @@ function track(event: AnalyticsEventType, extra: Partial<AnalyticsEvent> = {}) {
   }
 }
 
-/** One menu_open per browser session. */
-export function trackMenuOpen() {
+/** One menu_open per browser session, tagged with the resolved display language. */
+export function trackMenuOpen(lang: Lang) {
   if (typeof window === "undefined") return;
   if (sessionStorage.getItem(OPENED_KEY)) return;
   sessionStorage.setItem(OPENED_KEY, "1");
-  track("menu_open");
+  track("menu_open", { lang });
 }
 
 export function trackDishTap(dishId: string, category: string) {

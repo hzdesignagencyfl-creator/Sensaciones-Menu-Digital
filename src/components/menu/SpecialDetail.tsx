@@ -18,36 +18,50 @@ export function SpecialDetail({
   onOpenMedia: () => void;
 }) {
   const t = STR[lang];
-  const name = lang === "en" ? special.name_en : special.name_es;
-  const desc = lang === "en" ? special.description_en : special.description_es;
+  const name = lang === "en" ? special.name_en : special.name_es || special.name_en;
+  const desc = lang === "en" ? special.description_en : special.description_es || special.description_en;
   const hasPhoto = Boolean(special.photo_url);
+  const hasVideo = Boolean(special.video_url);
+  const hasMedia = hasPhoto || hasVideo;
 
   return (
     <div style={{ animation: "fadeIn 0.25s ease" }}>
       <ScreenHeader title={t.special} onBack={onBack} />
 
       <div style={{ padding: "16px 16px 40px" }}>
-        {/* Photo */}
+        {/* Media hero: looping video when present, else the photo */}
         <div
-          onClick={() => hasPhoto && onOpenMedia()}
+          onClick={() => hasMedia && onOpenMedia()}
           style={{
             position: "relative",
             borderRadius: "18px",
             overflow: "hidden",
-            cursor: hasPhoto ? "pointer" : "default",
+            cursor: hasMedia ? "pointer" : "default",
             boxShadow: "0 10px 28px rgba(30,30,30,0.14)",
             background: "linear-gradient(150deg, #efe9df 0%, #e6ddcd 60%, #ddd2bd 100%)",
             height: "252px",
           }}
         >
-          {hasPhoto && (
+          {hasVideo ? (
+            <video
+              src={special.video_url!}
+              poster={special.photo_url ?? undefined}
+              muted
+              loop
+              autoPlay
+              playsInline
+              preload="metadata"
+              aria-label={name}
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          ) : hasPhoto ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={special.photo_url!}
               alt={name}
               style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
             />
-          )}
+          ) : null}
           <span
             style={{
               position: "absolute",

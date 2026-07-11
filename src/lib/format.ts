@@ -15,16 +15,19 @@ export function formatAmount(price: number): string {
   return Number.isInteger(price) ? String(price) : price.toFixed(2);
 }
 
+// The admin only requires the EN name, so Spanish fields can be empty —
+// fall back to English rather than rendering a blank name/description.
 export function dishName(dish: Dish, lang: Lang): string {
-  return lang === "en" ? dish.name_en : dish.name_es;
+  return lang === "en" ? dish.name_en : dish.name_es || dish.name_en;
 }
 
 export function dishDesc(dish: Dish, lang: Lang): string {
-  return lang === "en" ? dish.description_en : dish.description_es;
+  return lang === "en" ? dish.description_en : dish.description_es || dish.description_en;
 }
 
 export function dishIngredients(dish: Dish, lang: Lang): string[] {
-  return lang === "en" ? dish.ingredients_en : dish.ingredients_es;
+  if (lang === "en") return dish.ingredients_en;
+  return dish.ingredients_es.length ? dish.ingredients_es : dish.ingredients_en;
 }
 
 /**

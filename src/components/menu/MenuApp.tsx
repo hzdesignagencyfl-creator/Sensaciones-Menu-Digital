@@ -85,11 +85,20 @@ export function MenuApp({ initial }: { initial: MenuData }) {
   // How many in-app navigations we have pushed; guards goBack on deep links.
   const depthRef = useRef(0);
 
-  // menu_open once per session
+  // menu_open once per session, tagged with the language actually shown
+  // (read localStorage directly here rather than the `lang` state, since the
+  // separate restore effect below may not have run yet).
   useEffect(() => {
     if (didOpen.current) return;
     didOpen.current = true;
-    trackMenuOpen();
+    let resolved: Lang = initial.settings.default_lang;
+    try {
+      const stored = window.localStorage.getItem(LANG_KEY);
+      if (stored === "en" || stored === "es") resolved = stored;
+    } catch {
+      // storage blocked — fall back to the default language
+    }
+    trackMenuOpen(resolved);
   }, []);
 
   // Cover: once per session.
