@@ -100,11 +100,11 @@ export async function saveSpecial(special: Special): Promise<void> {
   if (!supabase) return;
   const { error } = await supabase.from("special").upsert({ ...special, id: 1 });
   if (error) {
-    // Databases created before the banner-video migration lack video_url —
-    // retry without it so special edits keep working until the SQL is applied.
-    if (/video_url/.test(error.message)) {
-      const { video_url: _omit, ...legacy } = special;
-      void _omit;
+    // Databases created before the video/ingredients migration lack those
+    // columns — retry without them so edits keep working until the SQL runs.
+    if (/video_url|ingredients_e[ns]/.test(error.message)) {
+      const { video_url: _v, ingredients_en: _ie, ingredients_es: _is, ...legacy } = special;
+      void _v; void _ie; void _is;
       const retry = await supabase.from("special").upsert({ ...legacy, id: 1 });
       if (retry.error) throw retry.error;
       return;

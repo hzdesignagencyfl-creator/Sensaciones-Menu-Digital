@@ -1,34 +1,55 @@
 "use client";
 
+import { useMemo } from "react";
 import { STR } from "@/lib/data/menu-meta";
-import { formatPrice } from "@/lib/format";
-import type { Lang, Special } from "@/lib/types";
+import { dishName, formatPrice, joinNames } from "@/lib/format";
+import type { Dish, Lang, Special } from "@/lib/types";
 import { ScreenHeader } from "./ScreenHeader";
+import { SuggestionRow } from "./DishDetail";
 
-/** Full-screen detail for the Today's Special: photo, name, price, description. */
+const SUGGESTION_LIMIT = 6;
+
+/** Full-screen detail for the Today's Special — mirrors the dish detail:
+ *  media hero, name/price, ingredients, description and pairing suggestions. */
 export function SpecialDetail({
   special,
+  dishes,
   lang,
   onBack,
   onOpenMedia,
+  onOpenDish,
 }: {
   special: Special;
+  /** All visible dishes — source for pairing suggestions. */
+  dishes: Dish[];
   lang: Lang;
   onBack: () => void;
   onOpenMedia: () => void;
+  onOpenDish: (dish: Dish) => void;
 }) {
   const t = STR[lang];
   const name = lang === "en" ? special.name_en : special.name_es || special.name_en;
   const desc = lang === "en" ? special.description_en : special.description_es || special.description_en;
+  const ingredientsEn = special.ingredients_en ?? [];
+  const ingredientsEs = special.ingredients_es ?? [];
+  const ingredients = lang === "en" ? ingredientsEn : ingredientsEs.length ? ingredientsEs : ingredientsEn;
   const hasPhoto = Boolean(special.photo_url);
   const hasVideo = Boolean(special.video_url);
   const hasMedia = hasPhoto || hasVideo;
+
+  // Same pairing sources as the dish detail: available sides + drinks.
+  const pairings = useMemo(() => {
+    const bySort = (a: Dish, b: Dish) => a.sort_order - b.sort_order;
+    const sides = dishes.filter((d) => d.category === "sides" && d.available_today).sort(bySort);
+    const drinks = dishes.filter((d) => d.category === "drinks" && d.available_today).sort(bySort);
+    return [...sides.slice(0, 4), ...drinks.slice(0, 2)].slice(0, SUGGESTION_LIMIT);
+  }, [dishes]);
 
   return (
     <div style={{ animation: "fadeIn 0.25s ease" }}>
       <ScreenHeader title={t.special} onBack={onBack} />
 
-      <div style={{ padding: "16px 16px 40px" }}>
+      <div style={{ padding: pairings.length ? "16px 16px 0" : "16px 16px 40px" }}>
         {/* Media hero: looping video when present, else the photo */}
         <div
           onClick={() => hasMedia && onOpenMedia()}
@@ -108,21 +129,55 @@ export function SpecialDetail({
           )}
         </div>
 
+        {/* Ingredients */}
+        {ingredients.length > 0 && (
+          <>
+            <SectionTitle>{t.ingredients}</SectionTitle>
+            <ul style={{ margin: "10px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: "8px" }}>
+              {ingredients.map((ing) => (
+                <li key={ing} style={{ display: "flex", alignItems: "baseline", gap: "10px", fontSize: "13.5px", lineHeight: 1.5, color: "var(--body-text)" }}>
+                  <span style={{ width: "5px", height: "5px", borderRadius: "999px", background: "var(--gold-primary)", flex: "0 0 auto", transform: "translateY(-2px)" }} />
+                  {ing}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+
         {/* Description */}
         {desc && (
           <>
-            <div
-              className="font-display"
-              style={{ marginTop: "24px", fontSize: "17px", fontWeight: 700, color: "var(--charcoal)", letterSpacing: "0.02em" }}
-            >
-              {t.description}
-            </div>
+            <SectionTitle>{t.description}</SectionTitle>
             <p style={{ margin: "10px 0 0", fontSize: "13.5px", lineHeight: 1.65, color: "var(--body-text)" }}>
               {desc}
             </p>
           </>
         )}
       </div>
+
+      {/* Pair it with: prose suggestion + tappable dish cards */}
+      {pairings.length > 0 && (
+        <div style={{ paddingBottom: "40px" }}>
+          <SuggestionRow
+            title={t.pairWith}
+            intro={joinNames(pairings.map((d) => dishName(d, lang)), lang)}
+            dishes={pairings}
+            lang={lang}
+            onOpenDish={onOpenDish}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="font-display"
+      style={{ marginTop: "24px", fontSize: "17px", fontWeight: 700, color: "var(--charcoal)", letterSpacing: "0.02em" }}
+    >
+      {children}
     </div>
   );
 }

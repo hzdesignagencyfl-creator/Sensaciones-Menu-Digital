@@ -360,9 +360,11 @@ export function MenuApp({ initial }: { initial: MenuData }) {
         {view.screen === "special" && specialOpen && (
           <SpecialDetail
             special={special}
+            dishes={visible}
             lang={lang}
             onBack={goBack}
             onOpenMedia={() => setLightbox({ source: special, index: 0 })}
+            onOpenDish={openDish}
           />
         )}
         {view.screen === "special" && !specialOpen && homeEl}

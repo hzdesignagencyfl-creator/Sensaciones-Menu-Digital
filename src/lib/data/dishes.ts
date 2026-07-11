@@ -202,4 +202,6 @@ export const DEFAULT_SPECIAL: Special = {
   price: 34,
   photo_url: "/images/food/arroz-marinero-sensaciones-fort-myers.webp",
   video_url: null,
+  ingredients_en: ["Saffron rice", "Shrimp", "Mussels", "Calamari"],
+  ingredients_es: ["Arroz con azafrán", "Camarones", "Mejillones", "Calamares"],
 };

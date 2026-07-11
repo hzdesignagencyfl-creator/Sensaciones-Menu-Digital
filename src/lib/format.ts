@@ -30,6 +30,13 @@ export function dishIngredients(dish: Dish, lang: Lang): string[] {
   return dish.ingredients_es.length ? dish.ingredients_es : dish.ingredients_en;
 }
 
+/** Prose list for pairing suggestions: "A, B y C" / "A, B and C". */
+export function joinNames(names: string[], lang: Lang): string {
+  if (names.length <= 1) return names[0] ?? "";
+  const last = names[names.length - 1];
+  return names.slice(0, -1).join(", ") + (lang === "en" ? " and " : " y ") + last;
+}
+
 /**
  * Admin-stored URLs end up in href attributes — only ever emit http(s) so a
  * poisoned settings row can't smuggle a javascript: URL into the public menu.

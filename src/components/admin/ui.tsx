@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
 export const ui = {
@@ -147,4 +148,37 @@ export function Segmented<T extends string>({
 
 export function SectionFade({ children }: { children: ReactNode }) {
   return <div style={{ animation: "fadeUp 0.25s ease" }}>{children}</div>;
+}
+
+/** Tag list editor: type + Enter to add a chip, × to remove. */
+export function ChipInput({ values, onChange }: { values: string[]; onChange: (v: string[]) => void }) {
+  const [draft, setDraft] = useState("");
+  function add() {
+    const v = draft.trim();
+    if (v && !values.includes(v)) onChange([...values, v]);
+    setDraft("");
+  }
+  return (
+    <div style={{ ...ui.input, padding: "8px", display: "flex", flexWrap: "wrap", gap: "6px", minHeight: "42px", alignItems: "center" }}>
+      {values.map((v) => (
+        <span key={v} style={{ background: "var(--chip-bg)", color: "var(--chip-text)", borderRadius: "999px", padding: "4px 11px", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "6px" }}>
+          {v}
+          <button onClick={() => onChange(values.filter((x) => x !== v))} style={{ background: "none", border: "none", color: "var(--teal-mid)", cursor: "pointer", padding: 0, lineHeight: 1, fontSize: "14px" }}>×</button>
+        </span>
+      ))}
+      <input
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            add();
+          }
+        }}
+        onBlur={add}
+        placeholder="Type + Enter"
+        style={{ border: "none", outline: "none", flex: 1, minWidth: "90px", fontSize: "13px", background: "transparent" }}
+      />
+    </div>
+  );
 }

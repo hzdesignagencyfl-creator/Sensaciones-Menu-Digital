@@ -66,7 +66,7 @@ export function SpecialBanner({
         style={{
           position: "absolute",
           inset: 0,
-          background: "rgba(18,18,18,0.42)",
+          background: "rgba(18,18,18,0.20)",
           pointerEvents: "none",
         }}
       />
@@ -75,7 +75,7 @@ export function SpecialBanner({
           position: "absolute",
           inset: 0,
           background:
-            "linear-gradient(90deg,rgba(18,18,18,0.80) 0%,rgba(18,18,18,0.54) 55%,rgba(18,18,18,0.06) 100%)",
+            "linear-gradient(90deg,rgba(18,18,18,0.58) 0%,rgba(18,18,18,0.34) 55%,rgba(18,18,18,0.03) 100%)",
           pointerEvents: "none",
         }}
       />

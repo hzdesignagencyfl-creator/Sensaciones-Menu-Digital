@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { STR, categoryLabel } from "@/lib/data/menu-meta";
-import { dishDesc, dishIngredients, dishName, formatPrice } from "@/lib/format";
+import { dishDesc, dishIngredients, dishName, formatPrice, joinNames } from "@/lib/format";
 import { dishPhotoList } from "@/lib/types";
 import type { CategoryId, Dish, Lang } from "@/lib/types";
 import { Badges, Stars } from "./Badges";
@@ -296,9 +296,15 @@ export function DishDetail({
           )}
         </div>
 
-        {/* Pair it with */}
+        {/* Pair it with: prose suggestion + tappable dish cards */}
         {pairings.length > 0 && (
-          <SuggestionRow title={t.pairWith} dishes={pairings} lang={lang} onOpenDish={onOpenDish} />
+          <SuggestionRow
+            title={t.pairWith}
+            intro={joinNames(pairings.map((d) => dishName(d, lang)), lang)}
+            dishes={pairings}
+            lang={lang}
+            onOpenDish={onOpenDish}
+          />
         )}
       </div>
     </div>
@@ -316,14 +322,18 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Horizontal scroll of small dish cards linking to their own detail. */
-function SuggestionRow({
+/** Horizontal scroll of small dish cards linking to their own detail.
+ *  Shared by DishDetail and SpecialDetail. */
+export function SuggestionRow({
   title,
+  intro,
   dishes,
   lang,
   onOpenDish,
 }: {
   title: string;
+  /** Optional prose lead-in (description-style) above the cards. */
+  intro?: string;
   dishes: Dish[];
   lang: Lang;
   onOpenDish: (dish: Dish) => void;
@@ -336,6 +346,11 @@ function SuggestionRow({
       >
         {title}
       </div>
+      {intro && (
+        <p style={{ margin: "10px 0 0", padding: "0 16px", fontSize: "13.5px", lineHeight: 1.65, color: "var(--body-text)" }}>
+          {intro}
+        </p>
+      )}
       <div className="hide-scroll" style={{ display: "flex", gap: "12px", overflowX: "auto", padding: "12px 16px 4px" }}>
         {dishes.map((d) => (
           <div key={d.id} onClick={() => onOpenDish(d)} style={{ flex: "0 0 128px", cursor: "pointer" }}>

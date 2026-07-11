@@ -56,6 +56,9 @@ export interface Special {
   photo_url: string | null;
   /** Looping banner video (may be undefined before the DB migration runs). */
   video_url?: string | null;
+  /** Ingredient lists (may be undefined before the DB migration runs). */
+  ingredients_en?: string[] | null;
+  ingredients_es?: string[] | null;
 }
 
 export interface Settings {

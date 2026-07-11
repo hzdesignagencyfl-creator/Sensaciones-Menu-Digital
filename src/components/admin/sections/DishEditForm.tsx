@@ -6,7 +6,7 @@ import { CATEGORIES } from "@/lib/data/menu-meta";
 import { compressImage } from "@/lib/image";
 import { safeStorageName, slugify, uniqueId } from "@/lib/slug";
 import type { BadgeId, CategoryId, Dish } from "@/lib/types";
-import { Segmented, Toggle, ui } from "../ui";
+import { ChipInput, Segmented, Toggle, ui } from "../ui";
 
 const CATS = CATEGORIES.filter((c) => c.id !== "popular");
 const BADGE_FIELDS: { key: keyof Dish; id: BadgeId; label: string }[] = [
@@ -367,38 +367,6 @@ function SideCard({ title, children }: { title: string; children: React.ReactNod
     <div style={{ ...ui.card, padding: "16px 18px" }}>
       <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--charcoal)", marginBottom: "12px" }}>{title}</div>
       {children}
-    </div>
-  );
-}
-
-function ChipInput({ values, onChange }: { values: string[]; onChange: (v: string[]) => void }) {
-  const [draft, setDraft] = useState("");
-  function add() {
-    const v = draft.trim();
-    if (v && !values.includes(v)) onChange([...values, v]);
-    setDraft("");
-  }
-  return (
-    <div style={{ ...ui.input, padding: "8px", display: "flex", flexWrap: "wrap", gap: "6px", minHeight: "42px", alignItems: "center" }}>
-      {values.map((v) => (
-        <span key={v} style={{ background: "var(--chip-bg)", color: "var(--chip-text)", borderRadius: "999px", padding: "4px 11px", fontSize: "12px", display: "inline-flex", alignItems: "center", gap: "6px" }}>
-          {v}
-          <button onClick={() => onChange(values.filter((x) => x !== v))} style={{ background: "none", border: "none", color: "var(--teal-mid)", cursor: "pointer", padding: 0, lineHeight: 1, fontSize: "14px" }}>×</button>
-        </span>
-      ))}
-      <input
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            add();
-          }
-        }}
-        onBlur={add}
-        placeholder="Type + Enter"
-        style={{ border: "none", outline: "none", flex: 1, minWidth: "90px", fontSize: "13px", background: "transparent" }}
-      />
     </div>
   );
 }

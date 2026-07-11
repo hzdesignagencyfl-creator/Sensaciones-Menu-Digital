@@ -78,34 +78,20 @@ export function Home({
 
   return (
     <div style={{ animation: "fadeIn 0.25s ease" }}>
-      {/* Brand header */}
+      {/* Header: MENU title + language toggle, vertically centered together */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 16px 2px" }}>
-        <div>
-          <div
-            className="font-display"
-            style={{
-              fontSize: "23px",
-              fontWeight: 700,
-              letterSpacing: "0.05em",
-              textTransform: "uppercase",
-              color: "var(--teal-dark)",
-              lineHeight: 1,
-            }}
-          >
-            Sensaciones
-          </div>
-          <div
-            style={{
-              marginTop: "4px",
-              fontSize: "10px",
-              fontWeight: 600,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              color: "var(--gold-dark)",
-            }}
-          >
-            {t.tagline}
-          </div>
+        <div
+          className="font-display"
+          style={{
+            fontSize: "23px",
+            fontWeight: 700,
+            letterSpacing: "0.05em",
+            textTransform: "uppercase",
+            color: "var(--teal-dark)",
+            lineHeight: 1,
+          }}
+        >
+          {t.menuTitle}
         </div>
         <LangToggle lang={lang} onLang={onLang} />
       </div>

@@ -6,7 +6,7 @@ import { SpecialBanner } from "@/components/menu/SpecialBanner";
 import { compressImage } from "@/lib/image";
 import { safeStorageName } from "@/lib/slug";
 import type { Special } from "@/lib/types";
-import { Segmented, Toggle, ui } from "../ui";
+import { ChipInput, Segmented, Toggle, ui } from "../ui";
 
 export function SpecialSection({
   special,
@@ -89,6 +89,14 @@ export function SpecialSection({
           <Field label="Description (ES)">
             <textarea value={form.description_es} onChange={(e) => set("description_es", e.target.value)} rows={2} style={ui.input} />
           </Field>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+            <Field label="Ingredients (EN)">
+              <ChipInput values={form.ingredients_en ?? []} onChange={(v) => set("ingredients_en", v)} />
+            </Field>
+            <Field label="Ingredients (ES)">
+              <ChipInput values={form.ingredients_es ?? []} onChange={(v) => set("ingredients_es", v)} />
+            </Field>
+          </div>
           <Field label="Price">
             <div style={{ position: "relative", width: "160px" }}>
               <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", color: "var(--body-text)" }}>$</span>

@@ -43,6 +43,8 @@ create table if not exists public.special (
   price           numeric,
   photo_url       text,
   video_url       text,
+  ingredients_en  text[] default '{}',
+  ingredients_es  text[] default '{}',
   updated_at      timestamptz default now()
 );
 
